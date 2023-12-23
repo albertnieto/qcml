@@ -1,6 +1,7 @@
 import numpy as np
 from IPython.display import Math, Latex
 
+
 def array_to_dirac_notation(superposition_array):
     """
     Convert a complex-valued array representing a quantum state in superposition
@@ -20,20 +21,21 @@ def array_to_dirac_notation(superposition_array):
     num_qubits = int(np.log2(len(superposition_array)))
 
     # Initialize Dirac notation string
-    dirac_notation = ''
+    dirac_notation = ""
 
     # Iterate through the array and add terms to the Dirac notation
     for i, amplitude in enumerate(superposition_array):
         # Skip negligible amplitudes
         if np.abs(amplitude) > 1e-10:
             # Convert the index to binary representation
-            binary_rep = format(i, f'0{num_qubits}b')
+            binary_rep = format(i, f"0{num_qubits}b")
 
             # Add the term to Dirac notation
-            dirac_notation += f'{amplitude:.3f}|{binary_rep}⟩ + '
+            dirac_notation += f"{amplitude:.3f}|{binary_rep}⟩ + "
 
     # Remove the trailing " + " and return the result
     return dirac_notation[:-3]
+
 
 def array_to_matrix_representation(array):
     """
@@ -47,6 +49,7 @@ def array_to_matrix_representation(array):
     """
     return array.reshape((len(array), 1))
 
+
 def array_to_dirac_latex(array):
     """
     Generate LaTeX code for displaying the Dirac notation of a quantum state.
@@ -57,7 +60,8 @@ def array_to_dirac_latex(array):
     Returns:
     Math: A Math object containing LaTeX code for displaying Dirac notation.
     """
-    return Math(f'Dirac Notation:{array_to_dirac_notation(array)}')
+    return Math(f"Dirac Notation:{array_to_dirac_notation(array)}")
+
 
 def array_to_matrix_latex(array):
     """
@@ -70,10 +74,13 @@ def array_to_matrix_latex(array):
     Math: A Math object containing LaTeX code for displaying the matrix representation.
     """
     matrix_representation = array_to_matrix_representation(array)
-    latex = "\\begin{bmatrix}\n" + \
-            "\\\\\n".join(map(str, matrix_representation.flatten())) + \
-            "\n\\end{bmatrix}"
-    return Math(f'Matrix Representation:{latex}')
+    latex = (
+        "\\begin{bmatrix}\n"
+        + "\\\\\n".join(map(str, matrix_representation.flatten()))
+        + "\n\\end{bmatrix}"
+    )
+    return Math(f"Matrix Representation:{latex}")
+
 
 def array_to_dirac_and_matrix_latex(array):
     """
@@ -87,8 +94,10 @@ def array_to_dirac_and_matrix_latex(array):
     Latex: A Latex object containing LaTeX code for displaying both representations.
     """
     matrix_representation = array_to_matrix_representation(array)
-    latex = "Matrix representation\n\\begin{bmatrix}\n" + \
-            "\\\\\n".join(map(str, matrix_representation.flatten())) + \
-            "\n\\end{bmatrix}\n"
-    latex += f'Dirac Notation:\n{array_to_dirac_notation(array)}'
+    latex = (
+        "Matrix representation\n\\begin{bmatrix}\n"
+        + "\\\\\n".join(map(str, matrix_representation.flatten()))
+        + "\n\\end{bmatrix}\n"
+    )
+    latex += f"Dirac Notation:\n{array_to_dirac_notation(array)}"
     return Latex(latex)
