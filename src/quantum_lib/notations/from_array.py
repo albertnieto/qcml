@@ -122,3 +122,26 @@ def matrix_to_latex(matrix, prefix=''):
     latex_code += '\\end{bmatrix}'
 
     return Math(latex_code)
+
+def complex_matrix_to_string(matrix):
+    """
+    Transform a matrix of complex numbers to strings truncated to 4 decimals.
+
+    Parameters:
+    - matrix (numpy.ndarray): The input matrix of complex numbers.
+
+    Returns:
+    numpy.ndarray: Matrix of strings.
+    """
+    def format_complex_number(x):
+        if x.real == 0 and x.imag == 0:
+            return '0'
+        elif x.real == 0:
+            return f"{x.imag:.4f}i"
+        elif x.imag == 0:
+            return f"{x.real:.4f}"
+        else:
+            return f"{x.real:.4f} + {x.imag:.4f}i" if x.imag >= 0 else f"{x.real:.4f} - {-x.imag:.4f}I"
+
+    formatted_matrix = np.vectorize(format_complex_number)(matrix)
+    return formatted_matrix
