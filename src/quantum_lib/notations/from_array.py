@@ -101,3 +101,24 @@ def array_to_dirac_and_matrix_latex(array):
     )
     latex += f"Dirac Notation:\n{array_to_dirac_notation(array)}"
     return Latex(latex)
+
+def matrix_to_latex(matrix, prefix=''):
+    """
+    Convert a NumPy matrix to its LaTeX representation.
+
+    Parameters:
+    - matrix (numpy.ndarray): The input matrix.
+    - prefix (str): A string to be prepended to the LaTeX representation.
+
+    Returns:
+    IPython.display.Math: LaTeX representation of the matrix.
+    """
+    latex_code = f'{prefix}\\begin{{bmatrix}}\n'
+    
+    for row in matrix:
+        latex_code += ' & '.join(map(str, row))
+        latex_code += ' \\\\\n'
+    
+    latex_code += '\\end{bmatrix}'
+
+    return Math(latex_code)
