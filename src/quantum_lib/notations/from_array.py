@@ -145,3 +145,19 @@ def complex_matrix_to_string(matrix):
 
     formatted_matrix = np.vectorize(format_complex_number)(matrix)
     return formatted_matrix
+
+def cartesian_to_spherical(coords):
+    """
+    Convert Cartesian coordinates to spherical coordinates.
+
+    Parameters:
+    - coords (list or numpy array): List or array representing Cartesian coordinates [r, theta, phi].
+
+    Returns:
+    - numpy array: Spherical coordinates [r, theta, phi].
+    """
+    r, theta, phi = coords[0], coords[1], coords[2]
+    coords[0] = r * np.sin(theta) * np.cos(phi)
+    coords[1] = r * np.sin(theta) * np.sin(phi)
+    coords[2] = r * np.cos(theta)
+    return coords
