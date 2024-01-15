@@ -161,3 +161,34 @@ def cartesian_to_spherical(coords):
     coords[1] = r * np.sin(theta) * np.sin(phi)
     coords[2] = r * np.cos(theta)
     return coords
+
+
+from qiskit.visualization.bloch import Bloch
+import matplotlib.pyplot as plt
+
+def plot_bloch_multiple_vector(bloch_data, title='Bloch Sphere', font_size=16):
+    """
+    Plots multiple vectors on a Bloch sphere.
+
+    Parameters:
+    - bloch_data (dict): A dictionary where keys are labels for the vectors, and values are 3D vectors
+                        representing the points to plot on the Bloch sphere.
+    - title (str, optional): The title of the plot. Default is 'Bloch Sphere'.
+    - font_size (int, optional): Font size for the annotations on the Bloch sphere. Default is 16.
+
+    Returns:
+    - fig (matplotlib.figure.Figure): The matplotlib figure object representing the Bloch sphere plot.
+    """
+
+    fig, ax = plt.subplots(subplot_kw=dict(projection="3d"))
+
+    B = Bloch(axes=ax, font_size=font_size)
+    B.zlabel = ['z', '']
+
+    for key, value in bloch_data.items():
+        B.add_vectors([value])
+        B.add_annotation(value, key)
+        
+    B.render(title=title)
+
+    return fig
