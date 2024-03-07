@@ -3,7 +3,9 @@ import numpy as np
 import colorsys
 import re
 import math
-
+from qiskit.quantum_info import Statevector
+from circle_notation import CircleNotation
+from ..exceptions import QuantumError
 
 class QuantumState:
     """
