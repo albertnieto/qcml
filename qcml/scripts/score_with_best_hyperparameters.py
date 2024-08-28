@@ -20,6 +20,7 @@ import os
 import argparse
 import logging
 import pandas as pd
+
 logging.getLogger().setLevel(logging.INFO)
 from importlib import import_module
 from pathlib import Path
@@ -27,13 +28,15 @@ from qml_benchmarks.hyperparam_search_utils import read_data, csv_to_dict
 
 np.random.seed(42)
 
-logging.info('cpu count:' + str(os.cpu_count()))
+logging.info("cpu count:" + str(os.cpu_count()))
 
 
 if __name__ == "__main__":
     # Create an argument parser
-    parser = argparse.ArgumentParser(description="Run experiments with hyperparameter search.",
-                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Run experiments with hyperparameter search.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     parser.add_argument(
         "--classifier-name",
@@ -75,15 +78,18 @@ if __name__ == "__main__":
     # Parse the arguments along with any extra arguments that might be model specific
     args, unknown_args = parser.parse_known_args()
 
-    if any(arg is None for arg in [args.classifier_name,
-                                   args.trainset_path,
-                                   args.testset_path]):
+    if any(
+        arg is None
+        for arg in [args.classifier_name, args.trainset_path, args.testset_path]
+    ):
         msg = "\n================================================================================"
         msg += "\nA classifier from qml.benchmarks.model and dataset path are required. E.g., \n \n"
-        msg += ("python score_with_best_hyperparameters \ \n"
-                "--classifier DataReuploadingClassifier \ \n"
-                "--trainset-path my_train_data.csv\n"
-                "--testset-path my_test_data.csv\n")
+        msg += (
+            "python score_with_best_hyperparameters \ \n"
+            "--classifier DataReuploadingClassifier \ \n"
+            "--trainset-path my_train_data.csv\n"
+            "--testset-path my_test_data.csv\n"
+        )
         msg += "\nCheck all arguments for the script with \n"
         msg += "python score_with_best_hyperparameters --help\n"
         msg += "================================================================================"
@@ -98,10 +104,7 @@ if __name__ == "__main__":
     ###################################################################
     # Get the classifier, dataset and best hyperparameters
     ###################################################################
-    Classifier = getattr(
-        import_module("qml_benchmarks.models"),
-        args.classifier_name
-    )
+    Classifier = getattr(import_module("qml_benchmarks.models"), args.classifier_name)
     classifier_name = Classifier.__name__
 
     # Load the data
@@ -114,11 +117,13 @@ if __name__ == "__main__":
     # Construct output path
     dataset_path_obj = Path(args.trainset_path)
     results_filename_stem = " ".join(
-            [Classifier.__name__ + "_" + dataset_path_obj.stem
-             + "_GridSearchCV"])
+        [Classifier.__name__ + "_" + dataset_path_obj.stem + "_GridSearchCV"]
+    )
 
     # If we have already run this experiment then continue
-    path_out = os.path.join(results_path, results_filename_stem + "-best-hyperparams-results.csv")
+    path_out = os.path.join(
+        results_path, results_filename_stem + "-best-hyperparams-results.csv"
+    )
     if os.path.isfile(path_out):
         if args.clean is False:
             msg = "\n================================================================================="

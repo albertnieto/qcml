@@ -1,3 +1,17 @@
+# Copyright 2024 Albert Nieto
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import json
 import pandas as pd
@@ -7,6 +21,7 @@ from torch.utils.data import Dataset
 from torchvision.io import read_image
 from torchvision import transforms
 from sklearn.preprocessing import StandardScaler
+
 
 class EuroSAT(Dataset):
     """
@@ -41,7 +56,9 @@ class EuroSAT(Dataset):
         Array containing the labels.
     """
 
-    def __init__(self, root, train=True, transform=None, target_transform=None, replace=False):
+    def __init__(
+        self, root, train=True, transform=None, target_transform=None, replace=False
+    ):
         self.root = root
         self.train = train
         self.transform = transform
@@ -49,12 +66,16 @@ class EuroSAT(Dataset):
         self.replace = replace
 
         # Load annotations
-        self.annotations_file = os.path.join(self.root, "train.csv" if self.train else "test.csv")
+        self.annotations_file = os.path.join(
+            self.root, "train.csv" if self.train else "test.csv"
+        )
         self.img_labels = pd.read_csv(self.annotations_file)
 
         # Load label map
         self.img_dir = self.root
-        self.index_to_label = self._load_label_map(os.path.join(self.root, "label_map.json"))
+        self.index_to_label = self._load_label_map(
+            os.path.join(self.root, "label_map.json")
+        )
 
         # Get image size
         self.height, self.width = self._get_size()
@@ -77,7 +98,7 @@ class EuroSAT(Dataset):
         dict
             Dictionary mapping from index to label.
         """
-        with open(label_map_path, 'r') as f:
+        with open(label_map_path, "r") as f:
             return json.load(f)
 
     def _get_size(self):
@@ -156,7 +177,16 @@ class EuroSAT(Dataset):
             return image, label
 
 
-def generate_eurosat(classA, classB, root, n_samples=None, height=None, to_grayscale=False, split=True, replace=False):
+def generate_eurosat(
+    classA,
+    classB,
+    root,
+    n_samples=None,
+    height=None,
+    to_grayscale=False,
+    split=True,
+    replace=False,
+):
     """
     Generate EuroSAT dataset for binary classification between two specified classes.
 
@@ -194,8 +224,12 @@ def generate_eurosat(classA, classB, root, n_samples=None, height=None, to_grays
     y_test = dataset_test.targets
 
     # Filter to only include classA and classB
-    idxs_train = np.concatenate((np.where(y_train == classA)[0], np.where(y_train == classB)[0]))
-    idxs_test = np.concatenate((np.where(y_test == classA)[0], np.where(y_test == classB)[0]))
+    idxs_train = np.concatenate(
+        (np.where(y_train == classA)[0], np.where(y_train == classB)[0])
+    )
+    idxs_test = np.concatenate(
+        (np.where(y_test == classA)[0], np.where(y_test == classB)[0])
+    )
 
     X_train = X_train[idxs_train]
     y_train = y_train[idxs_train]
@@ -228,9 +262,15 @@ def generate_eurosat(classA, classB, root, n_samples=None, height=None, to_grays
     if n_samples is not None:
         # Randomly select n_samples if specified
         if n_samples > X_train_flat.shape[0]:
-            n_samples = X_train_flat.shape[0]  # Adjust if n_samples is greater than available samples
-        train_indices = np.random.choice(X_train_flat.shape[0], n_samples, replace=replace)
-        test_indices = np.random.choice(X_test_flat.shape[0], n_samples, replace=replace)
+            n_samples = X_train_flat.shape[
+                0
+            ]  # Adjust if n_samples is greater than available samples
+        train_indices = np.random.choice(
+            X_train_flat.shape[0], n_samples, replace=replace
+        )
+        test_indices = np.random.choice(
+            X_test_flat.shape[0], n_samples, replace=replace
+        )
         X_train_flat = X_train_flat[train_indices]
         y_train = y_train[train_indices]
         X_test_flat = X_test_flat[test_indices]

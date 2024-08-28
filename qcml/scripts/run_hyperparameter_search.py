@@ -20,24 +20,30 @@ import os
 import time
 import argparse
 import logging
+
 logging.getLogger().setLevel(logging.INFO)
 from importlib import import_module
 import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV
-from qml_benchmarks.hyperparam_search_utils import read_data, construct_hyperparameter_grid
+from qml_benchmarks.hyperparam_search_utils import (
+    read_data,
+    construct_hyperparameter_grid,
+)
 from qml_benchmarks.hyperparameter_settings import hyper_parameter_settings
 
 np.random.seed(42)
 
-logging.info('cpu count:' + str(os.cpu_count()))
+logging.info("cpu count:" + str(os.cpu_count()))
 
 
 if __name__ == "__main__":
     # Create an argument parser
-    parser = argparse.ArgumentParser(description="Run experiments with hyperparameter search.",
-                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Run experiments with hyperparameter search.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     parser.add_argument(
         "--classifier-name",
@@ -91,8 +97,7 @@ if __name__ == "__main__":
     # Parse the arguments along with any extra arguments that might be model specific
     args, unknown_args = parser.parse_known_args()
 
-    if any(arg is None for arg in [args.classifier_name,
-                                   args.dataset_path]):
+    if any(arg is None for arg in [args.classifier_name, args.dataset_path]):
         msg = "\n================================================================================"
         msg += "\nA classifier from qml.benchmarks.model and dataset path are required. E.g., \n \n"
         msg += "python run_hyperparameter_search \ \n--classifier DataReuploadingClassifier \ \n--dataset-path train.csv\n"
@@ -100,18 +105,20 @@ if __name__ == "__main__":
         msg += "python run_hyperparameter_search --help\n"
         msg += "================================================================================"
         raise ValueError(msg)
-    
+
     # Add model specific arguments to override the default hyperparameter grid
     hyperparam_grid = construct_hyperparameter_grid(
         hyper_parameter_settings, args.classifier_name
     )
     for hyperparam in hyperparam_grid:
         hp_type = type(hyperparam_grid[hyperparam][0])
-        parser.add_argument(f'--{hyperparam}',
-                            type=hp_type,
-                            nargs="+",
-                            default=hyperparam_grid[hyperparam],
-                            help=f'{hyperparam} grid values for {args.classifier_name}')
+        parser.add_argument(
+            f"--{hyperparam}",
+            type=hp_type,
+            nargs="+",
+            default=hyperparam_grid[hyperparam],
+            help=f"{hyperparam} grid values for {args.classifier_name}",
+        )
 
     args = parser.parse_args(unknown_args, namespace=args)
 
@@ -126,7 +133,15 @@ if __name__ == "__main__":
     logging.info(args.dataset_path)
     logging.info(" ".join(args.hyperparameter_scoring))
     logging.info(args.hyperparameter_refit)
-    logging.info("Hyperparam grid:"+" ".join([(str(key)+str(":")+str(hyperparam_grid[key])) for key in hyperparam_grid.keys()]))
+    logging.info(
+        "Hyperparam grid:"
+        + " ".join(
+            [
+                (str(key) + str(":") + str(hyperparam_grid[key]))
+                for key in hyperparam_grid.keys()
+            ]
+        )
+    )
 
     experiment_path = args.results_path
     results_path = os.path.join(experiment_path, "results")
@@ -137,10 +152,7 @@ if __name__ == "__main__":
     ###################################################################
     # Get the classifier, dataset and search methods from the arguments
     ###################################################################
-    Classifier = getattr(
-        import_module("qml_benchmarks.models"),
-        args.classifier_name
-    )
+    Classifier = getattr(import_module("qml_benchmarks.models"), args.classifier_name)
     classifier_name = Classifier.__name__
 
     # Run the experiments save the results
@@ -149,21 +161,25 @@ if __name__ == "__main__":
 
     dataset_path_obj = Path(args.dataset_path)
     results_filename_stem = " ".join(
-            [Classifier.__name__ + "_" + dataset_path_obj.stem
-             + "_GridSearchCV"])
+        [Classifier.__name__ + "_" + dataset_path_obj.stem + "_GridSearchCV"]
+    )
 
     # If we have already run this experiment then continue
     if os.path.isfile(os.path.join(results_path, results_filename_stem + ".csv")):
         if args.clean is False:
             msg = "\n================================================================================="
-            msg += "\nResults exist in " + os.path.join(results_path, results_filename_stem + ".csv")
+            msg += "\nResults exist in " + os.path.join(
+                results_path, results_filename_stem + ".csv"
+            )
             msg += "\nSpecify --clean True to override results or new --results-path"
             msg += "\n================================================================================="
             logging.warning(msg)
             sys.exit(msg)
         else:
-            logging.warning("Cleaning existing results for ", os.path.join(results_path, results_filename_stem + ".csv"))
-
+            logging.warning(
+                "Cleaning existing results for ",
+                os.path.join(results_path, results_filename_stem + ".csv"),
+            )
 
     ###########################################################################
     # Single fit to check everything works
@@ -173,14 +189,18 @@ if __name__ == "__main__":
     classifier.fit(X, y)
     b = time.time()
     acc_train = classifier.score(X, y)
-    logging.info(" ".join(
-        [classifier_name,
-        "Dataset path",
-        args.dataset_path,
-        "Train acc:",
-        str(acc_train),
-        "Time single run",
-        str(b - a)])
+    logging.info(
+        " ".join(
+            [
+                classifier_name,
+                "Dataset path",
+                args.dataset_path,
+                "Train acc:",
+                str(acc_train),
+                "Time single run",
+                str(b - a),
+            ]
+        )
     )
     if hasattr(classifier, "loss_history_"):
         if args.plot_loss:
@@ -195,21 +215,26 @@ if __name__ == "__main__":
     ###########################################################################
     # Hyperparameter search
     ###########################################################################
-    gs = GridSearchCV(estimator=classifier, param_grid=hyperparam_grid,
-                        scoring=args.hyperparameter_scoring,
-                        refit=args.hyperparameter_refit,
-                        verbose=3,
-                        n_jobs=-1).fit(
-        X, y
-    )
+    gs = GridSearchCV(
+        estimator=classifier,
+        param_grid=hyperparam_grid,
+        scoring=args.hyperparameter_scoring,
+        refit=args.hyperparameter_refit,
+        verbose=3,
+        n_jobs=-1,
+    ).fit(X, y)
     logging.info("Best hyperparams")
     logging.info(gs.best_params_)
 
     df = pd.DataFrame.from_dict(gs.cv_results_)
     df.to_csv(os.path.join(results_path, results_filename_stem + ".csv"))
 
-    best_df = pd.DataFrame(list(gs.best_params_.items()), columns=['hyperparameter', 'best_value'])
+    best_df = pd.DataFrame(
+        list(gs.best_params_.items()), columns=["hyperparameter", "best_value"]
+    )
 
     # Save best hyperparameters to a CSV file
-    best_df.to_csv(os.path.join(results_path,
-                                results_filename_stem + '-best-hyperparameters.csv'), index=False)
+    best_df.to_csv(
+        os.path.join(results_path, results_filename_stem + "-best-hyperparameters.csv"),
+        index=False,
+    )

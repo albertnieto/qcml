@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +17,7 @@
 
 import os
 import numpy as np
-from qml_benchmarks.data import generate_bars_and_stripes
+from qcml.data import generate_bars_and_stripes
 
 os.makedirs("bars_and_stripes", exist_ok=True)
 

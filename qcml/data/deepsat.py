@@ -1,38 +1,79 @@
+# Copyright 2024 Albert Nieto
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+
 class DeepSAT(Dataset):
-    def __init__(self, root, train=True, transform=None, target_transform=None, return_all=False, version='sat6'):
+    def __init__(
+        self,
+        root,
+        train=True,
+        transform=None,
+        target_transform=None,
+        return_all=False,
+        version="sat6",
+    ):
         self.root = root
         self.train = train
         self.transform = transform
         self.target_transform = target_transform
         self.return_all = return_all
         self.version = version
-            
+
         if self.return_all:
-            self.X_train = pd.read_csv(os.path.join(self.root, f"X_train_{self.version}.csv"), header=None)
-            self.y_train = pd.read_csv(os.path.join(self.root, f"y_train_{self.version}.csv"), header=None)
-            self.X_test = pd.read_csv(os.path.join(self.root, f"X_test_{self.version}.csv"), header=None)
-            self.y_test = pd.read_csv(os.path.join(self.root, f"y_test_{self.version}.csv"), header=None)
-            
+            self.X_train = pd.read_csv(
+                os.path.join(self.root, f"X_train_{self.version}.csv"), header=None
+            )
+            self.y_train = pd.read_csv(
+                os.path.join(self.root, f"y_train_{self.version}.csv"), header=None
+            )
+            self.X_test = pd.read_csv(
+                os.path.join(self.root, f"X_test_{self.version}.csv"), header=None
+            )
+            self.y_test = pd.read_csv(
+                os.path.join(self.root, f"y_test_{self.version}.csv"), header=None
+            )
+
             self.X_data = pd.concat([self.X_train, self.X_test])
             self.y_data = pd.concat([self.y_train, self.y_test])
         else:
             if self.train:
-                self.X_data = pd.read_csv(os.path.join(self.root, f"X_train_{self.version}.csv"), header=None)
-                self.y_data = pd.read_csv(os.path.join(self.root, f"y_train_{self.version}.csv"), header=None)
+                self.X_data = pd.read_csv(
+                    os.path.join(self.root, f"X_train_{self.version}.csv"), header=None
+                )
+                self.y_data = pd.read_csv(
+                    os.path.join(self.root, f"y_train_{self.version}.csv"), header=None
+                )
             else:
-                self.X_data = pd.read_csv(os.path.join(self.root, f"X_test_{self.version}.csv"), header=None)
-                self.y_data = pd.read_csv(os.path.join(self.root, f"y_test_{self.version}.csv"), header=None)
+                self.X_data = pd.read_csv(
+                    os.path.join(self.root, f"X_test_{self.version}.csv"), header=None
+                )
+                self.y_data = pd.read_csv(
+                    os.path.join(self.root, f"y_test_{self.version}.csv"), header=None
+                )
 
     def __len__(self):
         return len(self.X_data)
-    
+
     def __getitem__(self, idx):
-        image = self.X_data.iloc[idx].values.reshape([28,28,4])[:,:,:3] ##reshape input data to rgb image
+        image = self.X_data.iloc[idx].values.reshape([28, 28, 4])[
+            :, :, :3
+        ]  ##reshape input data to rgb image
         label = self.img_labels.iloc[idx, 2]
 
         if self.transform:
@@ -41,25 +82,25 @@ class DeepSAT(Dataset):
             label = self.target_transform(label)
 
         return image, label
-    
+
     def _label_conv(label_arr):
-        labels=[]
+        labels = []
         for i in range(len(label_arr)):
 
-            if (label_arr[i]==[1,0,0,0,0,0]).all():
-                labels.append("Building")  
+            if (label_arr[i] == [1, 0, 0, 0, 0, 0]).all():
+                labels.append("Building")
 
-            elif (label_arr[i]==[0,1,0,0,0,0]).all():  
-                labels.append("Barren_land")  
+            elif (label_arr[i] == [0, 1, 0, 0, 0, 0]).all():
+                labels.append("Barren_land")
 
-            elif (label_arr[i]==[0,0,1,0,0,0]).all():
-                labels.append("Tree") 
+            elif (label_arr[i] == [0, 0, 1, 0, 0, 0]).all():
+                labels.append("Tree")
 
-            elif (label_arr[i]==[0,0,0,1,0,0]).all():
+            elif (label_arr[i] == [0, 0, 0, 1, 0, 0]).all():
                 labels.append("Grassland")
 
-            elif (label_arr[i]==[0,0,0,0,1,0]).all():
-                labels.append("Road") 
+            elif (label_arr[i] == [0, 0, 0, 0, 1, 0]).all():
+                labels.append("Road")
 
             else:
                 labels.append("Water")

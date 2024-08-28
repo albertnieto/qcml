@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,7 +69,7 @@ def csv_to_dict(file_path):
         file_path (str): path to csv file
     """
     dict = {}
-    with open(file_path, 'r') as csvfile:
+    with open(file_path, "r") as csvfile:
         csvreader = csv.reader(csvfile)
         # Skip the first line
         next(csvreader)
@@ -76,7 +77,7 @@ def csv_to_dict(file_path):
             hyperparameter, value = row
             # Check if the value is numeric and convert it to int or float accordingly
             try:
-                if '.' in value:
+                if "." in value:
                     value = float(value)
                 else:
                     value = int(value)

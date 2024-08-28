@@ -2,6 +2,7 @@ class QuantumError(Exception):
     """
     Custom exception class for quantum-related errors.
     """
+
     def __init__(self, message="Quantum error"):
         """
         Initialize the QuantumError instance.
@@ -11,6 +12,8 @@ class QuantumError(Exception):
         """
         super().__init__(message)
 
+
 class InvalidGateError(QuantumError):
     """Exception raised for invalid quantum gate operations."""
+
     pass

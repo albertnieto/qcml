@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +18,10 @@
 import os
 import torch
 import numpy as np
+
 # we import explicitly from data.mnist here because some dependencies of
 # mnist generation are large and should not be imported by default
-from qml_benchmarks.data.mnist import generate_mnist
+from qcml.data.mnist import generate_mnist
 
 # generate the MNIST PCA benchmark
 np.random.seed(42)

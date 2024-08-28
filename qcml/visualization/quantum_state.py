@@ -7,6 +7,7 @@ from qiskit.quantum_info import Statevector
 from circle_notation import CircleNotation
 from ..exceptions import QuantumError
 
+
 class QuantumState:
     """
     QuantumState class for representing quantum states and visualizing them using Circle Notation.
@@ -99,7 +100,7 @@ class QuantumState:
         dimension = len(complex_numbers)
 
         return cls(complex_numbers, num_qubits, dimension)
-    
+
     @classmethod
     def from_string(cls, string: str) -> "QuantumState":
         """
@@ -205,12 +206,12 @@ class QuantumState:
         ]
 
         angle = self.zero_phase if use_zero_phase else self.phases
-        
+
         inner_color = [
             self.rgb_gradient_from_pi(phase)
             for phase in (self.zero_phase if use_zero_phase else self.phases)
         ]
-        
+
         len_inner_circle = [prob for prob in self.probabilities]
         omit_line = [probability == 0 for probability in self.probabilities]
 
@@ -218,7 +219,7 @@ class QuantumState:
             (i % circles_per_line) * x_distance_per_circle
             for i in range(self.dimension)
         ]
-        
+
         y_offset = [
             (i // circles_per_line) * y_distance_per_circle
             for i in range(self.dimension)

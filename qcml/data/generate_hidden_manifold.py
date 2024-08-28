@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +18,7 @@
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
-from qml_benchmarks.data import generate_hidden_manifold_model
+from qcml.data import generate_hidden_manifold_model
 
 np.random.seed(3)
 os.makedirs("hidden_manifold", exist_ok=True)

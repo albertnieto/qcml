@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def zero_state_array(n):
     """
     Create an n-qubit zero state.
@@ -11,6 +12,7 @@ def zero_state_array(n):
     - np.ndarray: Zero state for n qubits.
     """
     return np.kron(*[np.array([1, 0]) for _ in range(n)])
+
 
 def one_state_array(n):
     """
@@ -24,6 +26,7 @@ def one_state_array(n):
     """
     return np.kron(*[np.array([0, 1]) for _ in range(n)])
 
+
 def plus_state_array(n):
     """
     Create an n-qubit plus state.
@@ -35,6 +38,7 @@ def plus_state_array(n):
     - np.ndarray: Plus state for n qubits.
     """
     return np.kron(*[np.array([1, 1]) / np.sqrt(2) for _ in range(n)])
+
 
 def minus_state_array(n):
     """
@@ -48,6 +52,7 @@ def minus_state_array(n):
     """
     return np.kron(*[np.array([1, -1]) / np.sqrt(2) for _ in range(n)])
 
+
 def i_plus_state_array(n):
     """
     Create an n-qubit |i+⟩ state.
@@ -58,7 +63,10 @@ def i_plus_state_array(n):
     Returns:
     - np.ndarray: |i+⟩ state for n qubits.
     """
-    return np.kron(*[(np.array([1, 0]) + 1j * np.array([0, 1])) / np.sqrt(2) for _ in range(n)])
+    return np.kron(
+        *[(np.array([1, 0]) + 1j * np.array([0, 1])) / np.sqrt(2) for _ in range(n)]
+    )
+
 
 def i_minus_state_array(n):
     """
@@ -70,7 +78,10 @@ def i_minus_state_array(n):
     Returns:
     - np.ndarray: |i-⟩ state for n qubits.
     """
-    return np.kron(*[(np.array([1, 0]) - 1j * np.array([0, 1])) / np.sqrt(2) for _ in range(n)])
+    return np.kron(
+        *[(np.array([1, 0]) - 1j * np.array([0, 1])) / np.sqrt(2) for _ in range(n)]
+    )
+
 
 def bell_state_1_array():
     """
@@ -79,7 +90,11 @@ def bell_state_1_array():
     Returns:
     - np.ndarray: |Φ⁺⟩ Bell state.
     """
-    return (np.kron(np.array([1, 0]), np.array([1, 0])) + np.kron(np.array([0, 1]), np.array([0, 1]))) / np.sqrt(2)
+    return (
+        np.kron(np.array([1, 0]), np.array([1, 0]))
+        + np.kron(np.array([0, 1]), np.array([0, 1]))
+    ) / np.sqrt(2)
+
 
 def bell_state_2_array():
     """
@@ -88,7 +103,11 @@ def bell_state_2_array():
     Returns:
     - np.ndarray: |Φ⁻⟩ Bell state.
     """
-    return (np.kron(np.array([1, 0]), np.array([1, 0])) - np.kron(np.array([0, 1]), np.array([0, 1]))) / np.sqrt(2)
+    return (
+        np.kron(np.array([1, 0]), np.array([1, 0]))
+        - np.kron(np.array([0, 1]), np.array([0, 1]))
+    ) / np.sqrt(2)
+
 
 def bell_state_3_array():
     """
@@ -97,7 +116,11 @@ def bell_state_3_array():
     Returns:
     - np.ndarray: |Ψ⁺⟩ Bell state.
     """
-    return (np.kron(np.array([1, 0]), np.array([0, 1])) + np.kron(np.array([0, 1]), np.array([1, 0]))) / np.sqrt(2)
+    return (
+        np.kron(np.array([1, 0]), np.array([0, 1]))
+        + np.kron(np.array([0, 1]), np.array([1, 0]))
+    ) / np.sqrt(2)
+
 
 def bell_state_4_array():
     """
@@ -106,4 +129,7 @@ def bell_state_4_array():
     Returns:
     - np.ndarray: |Ψ⁻⟩ Bell state.
     """
-    return (np.kron(np.array([1, 0]), np.array([0, 1])) - np.kron(np.array([0, 1]), np.array([1, 0]))) / np.sqrt(2)
+    return (
+        np.kron(np.array([1, 0]), np.array([0, 1]))
+        - np.kron(np.array([0, 1]), np.array([1, 0]))
+    ) / np.sqrt(2)

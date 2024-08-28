@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +15,12 @@
 
 """Module containing data generating functions for classification tasks."""
 
-from qic.data.bars_and_stripes import generate_bars_and_stripes
-from qic.data.hidden_manifold import generate_hidden_manifold_model
-from qic.data.hyperplanes import generate_hyperplanes_parity
-from qic.data.linearly_separable import generate_linearly_separable
-from qic.data.two_curves import generate_two_curves
-from qic.data.load_data import get_dataset
-#from qic.data.two_curves import generate_two_curves
-#from qic.data.two_curves import generate_two_curves
+from qcml.data.bars_and_stripes import generate_bars_and_stripes
+from qcml.data.hidden_manifold import generate_hidden_manifold_model
+from qcml.data.hyperplanes import generate_hyperplanes_parity
+from qcml.data.linearly_separable import generate_linearly_separable
+from qcml.data.two_curves import generate_two_curves
+from qcml.data.load_data import get_dataset
+
+# from qcml.data.two_curves import generate_two_curves
+# from qcml.data.two_curves import generate_two_curves

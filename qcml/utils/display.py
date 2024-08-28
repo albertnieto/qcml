@@ -1,3 +1,17 @@
+# Copyright 2024 Albert Nieto
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
@@ -7,10 +21,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-    
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+
 
 def display_image_and_label_torch(dataloader):
     """
@@ -26,10 +41,10 @@ def display_image_and_label_torch(dataloader):
     train_features, train_labels = next(iter(dataloader))
     print(f"Feature batch shape: {train_features.size()}")
     print(f"Labels batch shape: {train_labels.size()}")
-    
+
     # Get the first image from the batch
     img = train_features[0]
-    
+
     # Check if the image has a single channel (grayscale) or three channels (RGB)
     if img.size(0) == 1:
         img = img.squeeze()  # Remove single-channel dimension for grayscale image
@@ -40,11 +55,12 @@ def display_image_and_label_torch(dataloader):
         plt.imshow(img)
     else:
         raise ValueError("Unsupported number of channels. Expected 1 or 3 channels.")
-    
-    plt.axis('off')  # Hide axis
+
+    plt.axis("off")  # Hide axis
     plt.show()
-    
+
     print(f"Label: {train_labels[0]}")
+
 
 def plot_samples_eurosat(X, y, n_samples=10):
     """
@@ -57,29 +73,32 @@ def plot_samples_eurosat(X, y, n_samples=10):
     """
     # Ensure we don't plot more samples than we have
     n_samples = min(n_samples, len(X))
-    
+
     # Determine the image shape
     n_features = X.shape[1]
     side_length = int(np.sqrt(n_features))
-    
+
     # Verify if the side_length is an integer
     if side_length * side_length != n_features:
-        raise ValueError("The number of features does not form a perfect square, please check the data.")
-    
+        raise ValueError(
+            "The number of features does not form a perfect square, please check the data."
+        )
+
     image_shape = (side_length, side_length)
-    
+
     plt.figure(figsize=(15, 15))
-    
+
     for i in range(n_samples):
         plt.subplot(1, n_samples, i + 1)
         img = X[i].reshape(image_shape)
-        plt.imshow(img, cmap='gray')
+        plt.imshow(img, cmap="gray")
         plt.title(f"Label: {y[i]}")
-        plt.axis('off')
-    
+        plt.axis("off")
+
     plt.show()
-    
-def plot_samples_mnist_pca(X, y, classes, num_samples=4, shape=[1,1]):
+
+
+def plot_samples_mnist_pca(X, y, classes, num_samples=4, shape=[1, 1]):
     """
     Plot a sample of images for each class specified in 'classes'.
 
@@ -94,12 +113,12 @@ def plot_samples_mnist_pca(X, y, classes, num_samples=4, shape=[1,1]):
     """
     # Initialize plot using Seaborn
     plt.figure(figsize=(12, 6))
-    sns.set(style='whitegrid')
+    sns.set(style="whitegrid")
 
     # Plot samples for each class
     for i, digit in enumerate(classes):
         # Find indices of samples belonging to current class
-        indices = (y == digit)
+        indices = y == digit
         X_digit = X[indices]
 
         # Check if X_digit is not empty
@@ -108,18 +127,23 @@ def plot_samples_mnist_pca(X, y, classes, num_samples=4, shape=[1,1]):
             continue
 
         # Plot the first num_samples samples
-        for j in range(min(num_samples, len(X_digit))):  # Ensure we don't exceed available samples
+        for j in range(
+            min(num_samples, len(X_digit))
+        ):  # Ensure we don't exceed available samples
             # Reshape X_digit[j] to the appropriate shape (adjust to your actual PCA-determined shape)
-            reshaped_image = X_digit[j].reshape((shape[0], shape[1]))  # Example shape, replace with actual shape
+            reshaped_image = X_digit[j].reshape(
+                (shape[0], shape[1])
+            )  # Example shape, replace with actual shape
 
             plt.subplot(len(classes), num_samples, i * num_samples + j + 1)
-            plt.imshow(reshaped_image, cmap='gray')  # Plot the reshaped image
-            plt.title(f'Class {digit}')
-            plt.axis('off')
+            plt.imshow(reshaped_image, cmap="gray")  # Plot the reshaped image
+            plt.title(f"Class {digit}")
+            plt.axis("off")
 
     plt.tight_layout()
     plt.show()
-    
+
+
 def plot_samples_mnist(X, y, classes, num_samples=4):
     """
     Plot a sample of images for each class specified in 'classes'.
@@ -135,7 +159,7 @@ def plot_samples_mnist(X, y, classes, num_samples=4):
     """
     # Initialize plot using Seaborn
     plt.figure(figsize=(12, 6))
-    sns.set(style='whitegrid')
+    sns.set(style="whitegrid")
 
     # Plot samples for each class
     for i, digit in enumerate(classes):
@@ -146,15 +170,18 @@ def plot_samples_mnist(X, y, classes, num_samples=4):
             continue
 
         # Plot the first num_samples samples
-        for j in range(min(num_samples, len(indices))):  # Ensure we don't exceed available samples
+        for j in range(
+            min(num_samples, len(indices))
+        ):  # Ensure we don't exceed available samples
             plt.subplot(len(classes), num_samples, i * num_samples + j + 1)
-            plt.imshow(X[indices[j]].reshape((28, 28)), cmap='gray')  # Plot the image
-            plt.title(f'Class {digit}')
-            plt.axis('off')
+            plt.imshow(X[indices[j]].reshape((28, 28)), cmap="gray")  # Plot the image
+            plt.title(f"Class {digit}")
+            plt.axis("off")
 
     plt.tight_layout()
     plt.show()
-    
+
+
 def plot_classifier_decision_boundary(clf, data_points, labels, title=None):
     """
     Visualizes the decision boundary of a classifier with a decision function in 2D space.
@@ -181,18 +208,26 @@ def plot_classifier_decision_boundary(clf, data_points, labels, title=None):
             Z[i, j] = clf.decision_function([x_test])
 
     # Create a custom colormap
-    cmap = ListedColormap(['blue', 'red'])
-            
+    cmap = ListedColormap(["blue", "red"])
+
     # Plotting
     plt.figure(figsize=(5, 3))
     plt.contourf(X1, X2, Z, levels=20, cmap=cmap, alpha=0.6)
 
     # Plot the data points
-    plt.scatter(data_points[:, 0], data_points[:, 1], c=labels, marker='o', s=50, cmap='bwr', edgecolor='k')
+    plt.scatter(
+        data_points[:, 0],
+        data_points[:, 1],
+        c=labels,
+        marker="o",
+        s=50,
+        cmap="bwr",
+        edgecolor="k",
+    )
 
-    plt.xlabel('X1')
-    plt.ylabel('X2')
-    
+    plt.xlabel("X1")
+    plt.ylabel("X2")
+
     # Set the title if provided
     if title:
         plt.title(title)
@@ -226,20 +261,28 @@ def plot_classifier_decision_boundary_3d(clf, data_points, labels, title=None):
             Z[i, j] = clf.decision_function([x_test])
 
     # Create a custom colormap
-    cmap = ListedColormap(['blue', 'red'])
-            
+    cmap = ListedColormap(["blue", "red"])
+
     # Plotting
     fig = plt.figure(figsize=(6, 4))
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection="3d")
     ax.plot_surface(X1, X2, Z, cmap=cmap, alpha=0.6)
 
     # Plot the data points
-    ax.scatter(data_points[:, 0], data_points[:, 1], np.zeros_like(data_points[:, 0]), c=labels, marker='o', s=20, cmap='bwr')
+    ax.scatter(
+        data_points[:, 0],
+        data_points[:, 1],
+        np.zeros_like(data_points[:, 0]),
+        c=labels,
+        marker="o",
+        s=20,
+        cmap="bwr",
+    )
 
-    ax.set_xlabel('X1')
-    ax.set_ylabel('X2')
-    ax.set_zlabel('Function Value')
-    
+    ax.set_xlabel("X1")
+    ax.set_ylabel("X2")
+    ax.set_zlabel("Function Value")
+
     # Set the title if provided
     if title:
         plt.title(title)

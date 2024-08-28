@@ -12,26 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .grid_search import GridSearch
-from .kernel_grid import (
-    classical_kernel_grid,
-    classical_kernel_param_map,
-    select_kernels,
-    quantum_kernel_grid,
-    quantum_kernel_param_map,
-    kernel_grid,
-    kernel_param_map,
-)
-from .transformation_grid import get_kernel_transform
+import gc
+from numba import cuda
+import logging
 
-__all__ = [
-    "grid_search",
-    "classical_kernel_grid",
-    "classical_kernel_param_map",
-    "quantum_kernel_grid",
-    "quantum_kernel_param_map",
-    "select_kernels",
-    "kernel_grid",
-    "kernel_param_map",
-    "get_kernel_transform",
-]
+logger = logging.getLogger(__name__)
+
+
+# WARNING: destroys context
+def clear_gpu_memory():
+    device = cuda.get_current_device()
+    device.reset()
+    gc.collect()
+    logger.info("GPU memory cleared.")

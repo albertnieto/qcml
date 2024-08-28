@@ -1,3 +1,17 @@
+# Copyright 2024 Albert Nieto
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import pandas as pd
 import numpy as np
@@ -6,7 +20,14 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-def get_dataset(dataset_name, root_path='datasets/', file_type='join', parameters=None, split_ratio=None):
+
+def get_dataset(
+    dataset_name,
+    root_path="datasets/",
+    file_type="join",
+    parameters=None,
+    split_ratio=None,
+):
     """
     Read data from CSV files where each row is a data sample.
     The columns are the input features, and the last column specifies a label.
@@ -28,9 +49,9 @@ def get_dataset(dataset_name, root_path='datasets/', file_type='join', parameter
         If file_type is 'split', returns X_train, X_test, y_train, y_test.
     """
     if parameters:
-        params = '_'.join(parameters)
+        params = "_".join(parameters)
     else:
-        params = ''
+        params = ""
 
     def load_file(file_type=None):
         # Build the filename based on the dataset name, file_type, and additional parameters
@@ -40,10 +61,10 @@ def get_dataset(dataset_name, root_path='datasets/', file_type='join', parameter
         if file_type:
             file_name = f"{file_name}_{file_type}"
         file_name = f"{file_name}.csv"
-        
+
         # Construct the full file path
         file_path = os.path.join(root_path, dataset_name, file_name)
-        
+
         try:
             logging.debug(f"Attempting to load file: {file_path}")
             # Attempt to read the CSV file
@@ -57,12 +78,12 @@ def get_dataset(dataset_name, root_path='datasets/', file_type='join', parameter
             logging.error(e)
             return None, None
 
-    if file_type == 'join':
+    if file_type == "join":
         logging.debug("File type is 'join'. Checking for both train and test files.")
         # Check if both train and test files exist
-        X_train, y_train = load_file('train')
-        X_test, y_test = load_file('test')
-        
+        X_train, y_train = load_file("train")
+        X_test, y_test = load_file("test")
+
         if X_train is not None and X_test is not None:
             logging.debug("Both train and test files found. Concatenating data.")
             # If both train and test files exist, concatenate them
@@ -76,32 +97,38 @@ def get_dataset(dataset_name, root_path='datasets/', file_type='join', parameter
             logging.debug("Only test file found. Returning test data.")
             return X_test, y_test
         else:
-            logging.debug("Neither train nor test files found. Trying without file_type.")
+            logging.debug(
+                "Neither train nor test files found. Trying without file_type."
+            )
             # If neither train nor test files are found, try loading without file_type
             return load_file(None)
 
-    elif file_type == 'split':
+    elif file_type == "split":
         logging.debug("File type is 'split'. Checking for train and test files.")
         # Check if both train and test files exist
-        X_train, y_train = load_file('train')
-        X_test, y_test = load_file('test')
+        X_train, y_train = load_file("train")
+        X_test, y_test = load_file("test")
 
         if X_train is not None and X_test is not None:
             logging.debug("Both train and test files found. Returning separate data.")
             return X_train, X_test, y_train, y_test
         else:
-            logging.debug("Either train or test file is missing. Attempting to split from a single file.")
+            logging.debug(
+                "Either train or test file is missing. Attempting to split from a single file."
+            )
             # If only one file exists, perform the split based on split_ratio
             X, y = load_file(None)
             if X is not None and split_ratio is not None:
-                train_ratio, test_ratio = map(float, split_ratio.split('/'))
+                train_ratio, test_ratio = map(float, split_ratio.split("/"))
                 train_size = int(len(X) * (train_ratio / (train_ratio + test_ratio)))
                 X_train, X_test = X[:train_size], X[train_size:]
                 y_train, y_test = y[:train_size], y[train_size:]
                 logging.debug(f"Data split with ratio {split_ratio}.")
                 return X_train, X_test, y_train, y_test
             else:
-                logging.error("Failed to load data for splitting or invalid split ratio provided.")
+                logging.error(
+                    "Failed to load data for splitting or invalid split ratio provided."
+                )
                 return None, None, None, None
 
     else:

@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -93,7 +94,7 @@ def train(
         if np.isnan(loss_val):
             logging.info(f"nan encountered. Training aborted.")
             break
-        
+
         # decide convergence
         if step > 2 * convergence_interval:
             # get means of last two intervals and standard deviation of last interval
