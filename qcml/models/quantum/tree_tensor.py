@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,8 +19,8 @@ import jax
 import jax.numpy as jnp
 import optax
 from sklearn.base import BaseEstimator, ClassifierMixin
-from qic.utils.model import train
-from qic.utils.model import chunk_vmapped_fn
+from qcml.utils.model import train
+from qcml.utils.model import chunk_vmapped_fn
 
 jax.config.update("jax_enable_x64", True)
 

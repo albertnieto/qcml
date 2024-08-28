@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +17,7 @@ import pennylane as qml
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import MinMaxScaler
-from qic.utils.model import *
+from qcml.utils.model import *
 
 jax.config.update("jax_enable_x64", True)
 

@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +17,7 @@ import pennylane as qml
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, ClassifierMixin
-from qic.utils.model import *
+from qcml.utils.model import *
 
 
 class DressedQuantumCircuitClassifier(BaseEstimator, ClassifierMixin):
@@ -259,7 +260,6 @@ class DressedQuantumCircuitClassifier(BaseEstimator, ClassifierMixin):
 
 
 class DressedQuantumCircuitClassifierOnlyNN(DressedQuantumCircuitClassifier):
-
     def construct_model(self):
         def dressed_circuit(params, x):
             x = self.input_transform(params, x)

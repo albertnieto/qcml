@@ -1,171 +1,396 @@
-import itertools
-import jax
-import jax.numpy as jnp
-import numpy as np
+# Copyright 2024 Albert Nieto
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
-import pandas as pd
+import itertools
 import time
 import logging
-import traceback
-import GPUtil
-
-from sklearn.metrics import accuracy_score, f1_score, precision_score
+import pandas as pd
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from .kernel_grid import kernel_param_map
-from .model_grid import model_grid
-from .filter_grid import filter_valid_combinations 
-from ..utils.kernel import compute_gram_matrix
-from ..utils.dataset import split_data
-from ..utils.gpu.info import get_gpu_info
+from qcml.bench.helper import (
+    log_start_info,
+    evaluate_model,
+    evaluate_transformed_model,
+)
+from qcml.bench.kernel_grid import kernel_param_map
+from qcml.bench.model_grid import model_grid
+from qcml.bench.filter_grid import (
+    prepare_param_grid,
+    generate_transformation_combinations,
+)
+from qcml.data import get_dataset
+from qcml.utils.dataset import validate_input_data
+from qcml.utils.storage import save_results_to_csv
+from qcml.bench.checkpoint import (
+    save_checkpoint,
+    load_checkpoint,
+    get_highest_batch_checkpoint,
+    delete_checkpoints,
+)
 
 logger = logging.getLogger(__name__)
 
-def evaluate_model(params, classifier, X_train, y_train, X_val, y_val, use_jax, kernel_func=None, kernel_params={}):
-    start_time = time.time()
-    
-    # Convert to JAX arrays if use_jax is True
-    if use_jax:
-        X_train = jnp.array(X_train)
-        y_train = jnp.array(y_train)
-        X_val = jnp.array(X_val)
-        y_val = jnp.array(y_val)
 
-    if kernel_func:
-        # Compute Gram matrix for the training set
-        X_train = compute_gram_matrix(X_train, X_train, kernel_func, **kernel_params)
-        
-        # Compute Gram matrix for the validation set with respect to the training set
-        X_val = compute_gram_matrix(X_val, X_train, kernel_func, **kernel_params)
-        
-        # Set kernel as precomputed in params
-        params['kernel'] = 'precomputed'
-    
-    # Initialize and train the model
-    model = classifier(**params)
-    model.fit(np.array(X_train), np.array(y_train))
+class GridSearch:
+    def __init__(
+        self,
+        classifier,
+        param_grid,
+        results_path="results/grid_search/",
+        checkpoint_interval=10,
+        batch_size=32,
+        n_jobs=-1,
+        error_traceback=False,
+        error_stop=True,
+        use_jax=True,
+        info_eval_criteria="batch",
+        transformation_func=None,
+        transformation_params=None,
+        experiment_name="default_dataset",
+        split_ratio=None,
+    ):
+        self.classifier = classifier
+        self.param_grid = param_grid
+        self.results_path = results_path
+        self.checkpoint_interval = checkpoint_interval
+        self.batch_size = batch_size
+        self.n_jobs = n_jobs
+        self.error_traceback = error_traceback
+        self.error_stop = error_stop
+        self.use_jax = use_jax
+        self.info_eval_criteria = info_eval_criteria
+        self.transformation_func = transformation_func
+        self.transformation_params = transformation_params
+        self.experiment_name = experiment_name
+        self.split_ratio = split_ratio
+        self.results = []
+        self.start_batch_idx = 0
 
-    # Make predictions on the validation set
-    predictions = model.predict(np.array(X_val))
-    
-    # Compute accuracy, F1 score, and precision
-    accuracy = accuracy_score(np.array(y_val), predictions)
-    f1 = f1_score(np.array(y_val), predictions, average='weighted', zero_division=0)
-    precision = precision_score(np.array(y_val), predictions, average='weighted', zero_division=0)
+    def run(
+        self,
+        datasets=None,
+        X=None,
+        y=None,
+        X_train=None,
+        y_train=None,
+        X_val=None,
+        y_val=None,
+        return_best=False,
+    ):
+        try:
+            if datasets:
+                all_results = []
+                for cls, dataset in itertools.product(self.classifier, datasets):
+                    self.dataset_name = dataset["name"]
+                    dataset_parameters = dataset["parameters"]
+                    self.experiment_name_suffix = (
+                        "_" + "_".join(dataset_parameters) if dataset_parameters else ""
+                    )
+                    self.checkpoint_experiment_name = (
+                        f"{self.dataset_name}{self.experiment_name_suffix}"
+                    )
+                    logger.info(
+                        f"Starting execution for {cls.__name__} on dataset {self.checkpoint_experiment_name}."
+                    )
 
-    # Calculate execution time
-    execution_time = time.time() - start_time
+                    result_filename = f"{cls.__name__}-{self.checkpoint_experiment_name}_best-hypa.csv"
+                    result_filepath = os.path.join(self.results_path, result_filename)
 
-    logger.debug(f"Model evaluated with params: {params}, accuracy: {accuracy}, f1_score: {f1}, precision: {precision}, execution_time: {execution_time}")
+                    if os.path.exists(result_filepath):
+                        logger.info(
+                            f"Skipping execution for {cls.__name__} on {self.checkpoint_experiment_name}. Results already exist."
+                        )
+                        continue
 
-    # Store kernel parameters and function name if a custom kernel was used
-    if kernel_func:
-        params['kernel_params'] = kernel_params
-        params['kernel_func'] = kernel_func.__name__
+                    self.start_batch_idx = 0
+                    checkpoint_data, batch_idx = get_highest_batch_checkpoint(
+                        [cls], self.checkpoint_experiment_name, self.dataset_name
+                    )
+                    if checkpoint_data:
+                        logger.info(
+                            f"Resuming from checkpoint {batch_idx} for {cls.__name__} on {self.dataset_name}."
+                        )
+                        self.results = checkpoint_data["results"]
+                        self.start_batch_idx = batch_idx
 
-    return accuracy, f1, precision, execution_time, params, model
+                    X, y = get_dataset(
+                        dataset_name=self.dataset_name, parameters=dataset_parameters
+                    )
 
+                    if self.experiment_name == "default_dataset":
+                        self.experiment_name = self.checkpoint_experiment_name
 
-def grid_search(classifier, param_grid, kernel_param_map=kernel_param_map, model_grid=model_grid, X=None, y=None, X_train=None, y_train=None, X_val=None, y_val=None, use_jax=True, n_jobs=-1, results_path="results/", experiment_name="tfm", split_ratio=None, error_traceback=False, log_combinations=False):
-    if (X is not None and y is None) or (X is None and y is not None):
-        raise ValueError("Both X and y must be provided if using whole dataset.")
+                    X_train, X_val, y_train, y_val = validate_input_data(
+                        X=X, y=y, split_ratio=self.split_ratio
+                    )
+                    grid_to_pass = self._prepare_param_grid(cls)
+                    result = self._grid_search_single_classifier(
+                        cls, grid_to_pass, X_train, y_train, X_val, y_val, return_best
+                    )
+                    all_results.append(result)
+                    delete_checkpoints(
+                        [cls], self.checkpoint_experiment_name, self.dataset_name
+                    )
 
-    if (X_train is not None and y_train is None) or (X_train is None and y_train is not None):
-        raise ValueError("Both X_train and y_train must be provided if using pre-split dataset.")
+                save_results_to_csv(
+                    self.results,
+                    self.classifier,
+                    self.experiment_name,
+                    self.results_path,
+                )
 
-    if (X_val is not None and y_val is None) or (X_val is None and y_val is not None):
-        raise ValueError("Both X_val and y_val must be provided if using pre-split dataset.")
+                return all_results if not return_best else self._get_best_result()
 
-    if X is not None and split_ratio is None:
-        raise ValueError("Split ratio must be provided if using whole dataset.")
+            else:
+                self.checkpoint_experiment_name = self.experiment_name
+                self.experiment_name_suffix = self.checkpoint_experiment_name
+                checkpoint_data, batch_idx = get_highest_batch_checkpoint(
+                    self.classifier, self.checkpoint_experiment_name, "custom"
+                )
+                if checkpoint_data:
+                    logger.info(
+                        f"Resuming from checkpoint {batch_idx} for {self.classifier.__name__} on custom dataset."
+                    )
+                    self.results = checkpoint_data["results"]
+                    self.start_batch_idx = batch_idx
+                else:
+                    self.start_batch_idx = 0
 
-    if X is not None and y is not None:
-        X_train, X_val, y_train, y_val = split_data(X, y, split_ratio)
-        logger.info(f"Data split into training and validation sets using split ratio: {split_ratio}")
-    elif X_train is None or y_train is None or X_val is None or y_val is None:
-        raise ValueError("Insufficient data provided. Provide either whole dataset or pre-split dataset.")
+                X_train, X_val, y_train, y_val = validate_input_data(
+                    X=X,
+                    y=y,
+                    X_train=X_train,
+                    y_train=y_train,
+                    X_val=X_val,
+                    y_val=y_val,
+                    split_ratio=self.split_ratio,
+                )
+                delete_checkpoints(
+                    self.classifier, self.checkpoint_experiment_name, "custom"
+                )
+                return self._grid_search_single_classifier(
+                    self.classifier,
+                    self.param_grid,
+                    X_train,
+                    y_train,
+                    X_val,
+                    y_val,
+                    return_best,
+                )
 
-    best_score = -np.inf
-    best_params = None
-    best_model = None
-    results = []
+        finally:
+            # TODO - Ensure GPU memory is cleared
+            pass
 
-    if isinstance(param_grid, dict):
-        combinations = filter_valid_combinations(param_grid, kernel_param_map, log_combinations)
-    elif isinstance(param_grid, list) and len(param_grid) == 2:
-        classifier = param_grid[0]
-        kernel_param_grid = param_grid[1]
-        classifier_name = getattr(classifier, '__name__', str(classifier))
-        param_grid = model_grid.get(classifier_name, {})
-        param_grid['kernel_func'] = [kp['kernel_func'] for kp in kernel_param_grid]
-        param_grid['kernel_params'] = [kp['kernel_params'] for kp in kernel_param_grid]
-        combinations = filter_valid_combinations(param_grid, kernel_param_map, log_combinations)
-    else:
-        raise ValueError("param_grid should either be a dictionary or a list with two elements: [classifier, kernel_param_grid].")
+    def _grid_search_single_classifier(
+        self, cls, param_grid, X_train, y_train, X_val, y_val, return_best=False
+    ):
+        transformation_combinations = (
+            generate_transformation_combinations(
+                self.transformation_func, self.transformation_params
+            )
+            if self.transformation_func is not None
+            else [(None, {})]
+        )
 
-    n_jobs = n_jobs if n_jobs != -1 else None
-    logger.info(f"Starting grid search with classifier: {classifier_name}, n_jobs: {n_jobs}, number of combinations: {len(combinations)}")
+        combinations, classifier_name = prepare_param_grid(
+            param_grid, kernel_param_map, model_grid, cls, self.info_eval_criteria
+        )
 
-    num_gpus, gpu_names = get_gpu_info()
-    logger.info(f"Number of GPUs available: {num_gpus}")
-    if num_gpus > 0:
-        logger.info(f"GPU details: {gpu_names}")
+        self.n_jobs = (
+            min(os.cpu_count(), self.batch_size) if self.n_jobs == -1 else self.n_jobs
+        )
+        log_start_info(classifier_name, combinations, self.n_jobs)
 
-    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
-        futures = [
-            executor.submit(
-                evaluate_model, 
-                {k: v for k, v in params.items() if k not in ['kernel_func', 'kernel_params']},
-                classifier, 
-                X_train, 
-                y_train, 
-                X_val, 
-                y_val, 
-                use_jax, 
-                params.get('kernel_func', None), 
-                params.get('kernel_params', {})
-            ) 
-            for params in combinations
-        ]
+        best_score, best_params, best_model = self.evaluate_combinations(
+            combinations,
+            transformation_combinations,
+            cls,
+            classifier_name,
+            X_train,
+            y_train,
+            X_val,
+            y_val,
+        )
 
-        num_parallel_evaluations = len(futures)
-        logger.info(f"Number of parallel evaluations: {num_parallel_evaluations}")
+        save_results_to_csv(
+            self.results, classifier_name, self.experiment_name, self.results_path
+        )
+        delete_checkpoints([cls], self.checkpoint_experiment_name, self.dataset_name)
 
-        for i, future in enumerate(as_completed(futures)):
-            params = None
-            try:
-                accuracy, f1, precision, execution_time, params, model = future.result()
-                if 'kernel_params' in params:
-                    params.update(params.pop('kernel_params'))
-                if 'kernel_func' in params:
-                    params['kernel_func'] = params['kernel_func']
+        if return_best:
+            return best_model, best_params, best_score
 
-                results.append({
-                    "experiment_name": experiment_name,
-                    "classifier": classifier_name,
-                    "params": params,
-                    "accuracy": accuracy,
-                    "f1_score": f1,
-                    "precision": precision,
-                    "execution_time": execution_time
-                })
-                if accuracy > best_score:
-                    best_score = accuracy
-                    best_params = params
-                    best_model = model
-                logger.info(f"Evaluation {i+1}/{num_parallel_evaluations} finished for params: {params}, execution time: {execution_time:.2f} seconds")
-            except Exception as e:
-                logger.error(f"Error evaluating parameters {params}: {e}")
-                if error_traceback:
-                    logger.error(traceback.format_exc())
+        return self.results
 
-    if not os.path.exists(results_path):
-        os.makedirs(results_path)
+    def evaluate_combinations(
+        self,
+        combinations,
+        transformation_combinations,
+        classifier,
+        classifier_name,
+        X_train,
+        y_train,
+        X_val,
+        y_val,
+    ):
+        best_score, best_params, best_model = -np.inf, None, None
 
-    csv_file_name = f"{classifier_name}-{experiment_name}_best-hypa.csv"
-    csv_file_path = os.path.join(results_path, csv_file_name)
+        total_combinations = len(combinations) * len(transformation_combinations)
+        num_batches = int(np.ceil(total_combinations / self.batch_size))
+        logger.info(
+            f"Total combinations: {total_combinations}, Batch size: {self.batch_size}, Number of batches: {num_batches}"
+        )
+        logger.debug(f"Logs will be printed by: {self.info_eval_criteria}")
 
-    df_results = pd.DataFrame(results)
-    df_results.to_csv(csv_file_path, index=False)
-    logger.debug(f"Results saved to {csv_file_path}, file size: {os.path.getsize(csv_file_path)} bytes")
+        for batch_idx in range(self.start_batch_idx, num_batches):
+            if self.info_eval_criteria == "batch":
+                logger.info(f"Starting batch {batch_idx + 1} of {num_batches}")
 
-    return best_model, best_params, best_score
+            start_idx = batch_idx * self.batch_size
+            end_idx = min(start_idx + self.batch_size, total_combinations)
+            batch_combinations = combinations[start_idx:end_idx]
+
+            with ThreadPoolExecutor(max_workers=self.n_jobs) as executor:
+                futures = []
+
+                for trans_func, trans_params in transformation_combinations:
+                    if trans_func is not None:
+                        (
+                            X_train_trans,
+                            X_val_trans,
+                            y_train_trans,
+                            y_val_trans,
+                        ) = trans_func(X_train, X_val, y_train, y_val, **trans_params)
+                    else:
+                        X_train_trans, X_val_trans, y_train_trans, y_val_trans = (
+                            X_train,
+                            X_val,
+                            y_train,
+                            y_val,
+                        )
+                    logger.debug(
+                        f"Original X shape: {X_train.shape}, Transformed X shape: {X_train_trans.shape}"
+                    )
+                    for params in batch_combinations:
+                        clean_params = {
+                            k: v
+                            for k, v in params.items()
+                            if k not in ["kernel_func", "kernel_params"]
+                        }
+                        logger.debug(
+                            f"Classifier parameters sent to the future: {clean_params}"
+                        )
+                        futures.append(
+                            executor.submit(
+                                evaluate_model,
+                                clean_params,
+                                classifier,
+                                X_train_trans,
+                                y_train_trans,
+                                X_val_trans,
+                                y_val_trans,
+                                self.use_jax,
+                                params.get("kernel_func"),
+                                params.get("kernel_params", {}),
+                            )
+                        )
+
+                for i, future in enumerate(as_completed(futures)):
+                    params = None
+                    try:
+                        (
+                            accuracy,
+                            f1,
+                            precision,
+                            execution_time,
+                            params,
+                            model,
+                        ) = future.result()
+                        kernel_func = params.pop("kernel_func", None)
+                        kernel_params = params.pop("kernel_params", None)
+                        transf_func = params.pop("transf_func", None)
+                        transf_params = params.pop("transf_params", None)
+
+                        self.results.append(
+                            {
+                                "experiment_name": self.experiment_name,
+                                "classifier": classifier_name,
+                                "params": params,
+                                "kernel_func": kernel_func,
+                                "kernel_params": kernel_params,
+                                "accuracy": accuracy,
+                                "f1_score": f1,
+                                "precision": precision,
+                                "execution_time": execution_time,
+                                "transf_func": transf_func,
+                                "transf_params": transf_params,
+                            }
+                        )
+
+                        if accuracy > best_score:
+                            best_score, best_params, best_model = (
+                                accuracy,
+                                params,
+                                model,
+                            )
+
+                        if self.info_eval_criteria == "single":
+                            logger.info(
+                                f"Evaluation {start_idx + i + 1}/{total_combinations} finished: {params}, time: {execution_time:.2f}s"
+                            )
+                    except Exception as e:
+                        logger.error(f"Error with parameters {params}: {e}")
+                        if self.error_traceback:
+                            logger.error(traceback.format_exc())
+                        if self.error_stop:
+                            raise e
+
+            if self.info_eval_criteria == "batch":
+                logger.info(
+                    f"Batch {batch_idx + 1} of {num_batches} completed ({min(end_idx, total_combinations)}/{total_combinations})."
+                )
+
+            if (batch_idx + 1) % self.checkpoint_interval == 0:
+                save_checkpoint(
+                    results=self.results,
+                    classifier_name=[classifier],
+                    experiment_name=self.checkpoint_experiment_name,
+                    batch_idx=batch_idx + 1,
+                    dataset_name=self.dataset_name,
+                )
+
+        return best_score, best_params, best_model
+
+    def _prepare_param_grid(self, cls):
+        if isinstance(self.param_grid, dict):
+            return self.param_grid
+        elif (
+            isinstance(self.param_grid, list)
+            and len(self.param_grid) == len(self.classifier) + 1
+        ):
+            return [cls, self.param_grid[-1]]
+        elif isinstance(self.param_grid, list) and len(self.param_grid) == len(
+            self.param_grid
+        ):
+            return [cls]
+        else:
+            raise ValueError("Invalid param_grid format")
+
+    def _get_best_result(self):
+        if not self.results:
+            return None, None, None
+        best_result = max(self.results, key=lambda x: x["accuracy"])
+        return best_result["classifier"], best_result["params"], best_result["accuracy"]

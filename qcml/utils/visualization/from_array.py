@@ -102,7 +102,8 @@ def array_to_dirac_and_matrix_latex(array):
     latex += f"Dirac Notation:\n{array_to_dirac_notation(array)}"
     return Latex(latex)
 
-def matrix_to_latex(matrix, prefix=''):
+
+def matrix_to_latex(matrix, prefix=""):
     """
     Convert a NumPy matrix to its LaTeX representation.
 
@@ -113,15 +114,16 @@ def matrix_to_latex(matrix, prefix=''):
     Returns:
     IPython.display.Math: LaTeX representation of the matrix.
     """
-    latex_code = f'{prefix}\\begin{{bmatrix}}\n'
-    
+    latex_code = f"{prefix}\\begin{{bmatrix}}\n"
+
     for row in matrix:
-        latex_code += ' & '.join(map(str, row))
-        latex_code += ' \\\\\n'
-    
-    latex_code += '\\end{bmatrix}'
+        latex_code += " & ".join(map(str, row))
+        latex_code += " \\\\\n"
+
+    latex_code += "\\end{bmatrix}"
 
     return Math(latex_code)
+
 
 def complex_matrix_to_string(matrix):
     """
@@ -133,18 +135,24 @@ def complex_matrix_to_string(matrix):
     Returns:
     numpy.ndarray: Matrix of strings.
     """
+
     def format_complex_number(x):
         if x.real == 0 and x.imag == 0:
-            return '0'
+            return "0"
         elif x.real == 0:
             return f"{x.imag:.4f}i"
         elif x.imag == 0:
             return f"{x.real:.4f}"
         else:
-            return f"{x.real:.4f} + {x.imag:.4f}i" if x.imag >= 0 else f"{x.real:.4f} - {-x.imag:.4f}I"
+            return (
+                f"{x.real:.4f} + {x.imag:.4f}i"
+                if x.imag >= 0
+                else f"{x.real:.4f} - {-x.imag:.4f}I"
+            )
 
     formatted_matrix = np.vectorize(format_complex_number)(matrix)
     return formatted_matrix
+
 
 def cartesian_to_spherical(coords):
     """
@@ -166,7 +174,8 @@ def cartesian_to_spherical(coords):
 from qiskit.visualization.bloch import Bloch
 import matplotlib.pyplot as plt
 
-def plot_bloch_multiple_vector(bloch_data, title='Bloch Sphere', font_size=16):
+
+def plot_bloch_multiple_vector(bloch_data, title="Bloch Sphere", font_size=16):
     """
     Plots multiple vectors on a Bloch sphere.
 
@@ -183,12 +192,12 @@ def plot_bloch_multiple_vector(bloch_data, title='Bloch Sphere', font_size=16):
     fig, ax = plt.subplots(subplot_kw=dict(projection="3d"))
 
     B = Bloch(axes=ax, font_size=font_size)
-    B.zlabel = ['z', '']
+    B.zlabel = ["z", ""]
 
     for key, value in bloch_data.items():
         B.add_vectors([value])
         B.add_annotation(value, key)
-        
+
     B.render(title=title)
 
     return fig

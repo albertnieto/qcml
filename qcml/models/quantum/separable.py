@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +16,10 @@
 from sklearn.base import BaseEstimator, ClassifierMixin
 import pennylane as qml
 import numpy as np
-from qic.utils.model import *
+from qcml.utils.model import *
 from sklearn.svm import SVC
 from sklearn.preprocessing import MinMaxScaler
-from qic.models.classical import KernelPerceptron
+from qcml.models.classical import KernelPerceptron
 
 jax.config.update("jax_enable_x64", True)
 
@@ -277,7 +278,7 @@ class SeparableKernelClassifier(BaseEstimator, ClassifierMixin):
         self.encoding_layers = encoding_layers
         self.dev_type = dev_type
         self.qnode_kwargs = qnode_kwargs
-        self.jit = jit 
+        self.jit = jit
         self.classifier = classifier
         self.C = C
         self.scaling = scaling

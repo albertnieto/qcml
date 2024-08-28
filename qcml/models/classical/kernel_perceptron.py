@@ -1,11 +1,33 @@
+# Copyright 2024 Albert Nieto
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 import jax
 from jax import jit
 import jax.numpy as jnp
 from sklearn.base import BaseEstimator, ClassifierMixin
 
+
 class KernelPerceptron(BaseEstimator, ClassifierMixin):
-    def __init__(self, kernel="precomputed", n_iter=-1, random_state=42, params=None, max_iter=1000):
+    def __init__(
+        self,
+        kernel="precomputed",
+        n_iter=-1,
+        random_state=42,
+        params=None,
+        max_iter=1000,
+    ):
         """
         Kernel Perceptron classifier.
 
@@ -34,7 +56,7 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
 
     def _compute_kernel_matrix(self, X):
         """Compute the kernel matrix for the input data X."""
-        kernel_func = (lambda x_, y_: self.kernel(x_, y_, **self.params))
+        kernel_func = lambda x_, y_: self.kernel(x_, y_, **self.params)
         K = jax.vmap(lambda x: jax.vmap(lambda y: kernel_func(x, y))(X))(X)
         return K
 
@@ -52,9 +74,12 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
         Returns:
         array: Updated alpha values.
         """
+
         def body_fun(i, alpha):
             condition = jnp.sign(jnp.sum(K[:, i] * alpha * y)) != y[i]
-            return jax.lax.cond(condition, lambda a: a.at[i].add(1.0), lambda a: a, alpha)
+            return jax.lax.cond(
+                condition, lambda a: a.at[i].add(1.0), lambda a: a, alpha
+            )
 
         alpha = jax.lax.fori_loop(0, K.shape[0], body_fun, alpha)
         return alpha
@@ -69,7 +94,7 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
         """
         if not callable(self.kernel) and self.kernel != "precomputed":
             raise ValueError("No valid kernel function provided.")
-        
+
         if self.kernel == "precomputed":
             if X.shape[0] != X.shape[1]:
                 raise ValueError("Precomputed kernel must be a square matrix")
@@ -110,10 +135,18 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
         array: Projected values.
         """
         if self.kernel == "precomputed":
-            y_predict = jax.vmap(lambda i: jnp.sum(self.alpha * self.sv_y * X[i, self.sv]))(jnp.arange(len(X)))
+            y_predict = jax.vmap(
+                lambda i: jnp.sum(self.alpha * self.sv_y * X[i, self.sv])
+            )(jnp.arange(len(X)))
         elif callable(self.kernel):
-            kernel_func = (lambda x_, y_: self.kernel(x_, y_, **self.params))
-            y_predict = jax.vmap(lambda x: jnp.sum(self.alpha * self.sv_y * jax.vmap(lambda sv: kernel_func(x, sv))(self.sv)))(X)
+            kernel_func = lambda x_, y_: self.kernel(x_, y_, **self.params)
+            y_predict = jax.vmap(
+                lambda x: jnp.sum(
+                    self.alpha
+                    * self.sv_y
+                    * jax.vmap(lambda sv: kernel_func(x, sv))(self.sv)
+                )
+            )(X)
         else:
             raise ValueError("No valid kernel function provided.")
         return y_predict

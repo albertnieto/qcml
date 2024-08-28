@@ -1,4 +1,5 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
+# Modified by Albert Nieto, 2024.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +24,7 @@ from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
-from qic.utils.model import chunk_vmapped_fn
+from qcml.utils.model import chunk_vmapped_fn
 
 
 class QuantumKitchenSinks(BaseEstimator, ClassifierMixin):

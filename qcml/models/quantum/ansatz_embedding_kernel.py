@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Albert Nieto
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import time
 import pennylane as qml
 import numpy as np
@@ -20,8 +21,8 @@ import jax.numpy as jnp
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.svm import SVC
 from sklearn.preprocessing import MinMaxScaler
-from qic.utils.model import chunk_vmapped_fn
-from qic.models.classical import KernelPerceptron
+from qcml.utils.model import chunk_vmapped_fn
+from qcml.models.classical import KernelPerceptron
 
 jax.config.update("jax_enable_x64", True)
 
@@ -72,13 +73,13 @@ class AnsatzEmbeddingKernel(BaseEstimator, ClassifierMixin):
         self.C = C
         self.jit = jit
         self.max_vmap = max_vmap
-        
+
         self.classifier = classifier
         if classifier == "perceptron":
             self.svm = KernelPerceptron(kernel="precomputed")
         else:
             self.svm = SVC(kernel="precomputed", probability=True)
-        
+
         self.dev_type = dev_type
         self.qnode_kwargs = qnode_kwargs
         self.scaling = scaling
@@ -104,7 +105,9 @@ class AnsatzEmbeddingKernel(BaseEstimator, ClassifierMixin):
                 qml.RZ(x[i % len(x)], wires=[wire])
                 i += inc
                 qml.RY(params[0, j], wires=[wire])
-            qml.broadcast(unitary=qml.CRZ, pattern="ring", wires=wires, parameters=params[1])
+            qml.broadcast(
+                unitary=qml.CRZ, pattern="ring", wires=wires, parameters=params[1]
+            )
 
         def ansatz(x, params, wires):
             """The embedding ansatz"""
@@ -113,7 +116,9 @@ class AnsatzEmbeddingKernel(BaseEstimator, ClassifierMixin):
 
         def random_params(num_wires, num_layers):
             """Generate random variational parameters in the shape for the ansatz."""
-            return jnp.random.uniform(0, 2 * jnp.pi, (num_layers, 2, num_wires), requires_grad=True)
+            return jnp.random.uniform(
+                0, 2 * jnp.pi, (num_layers, 2, num_wires), requires_grad=True
+            )
 
         num_wires = self.n_qubits_
         num_layers = self.repeats
@@ -124,9 +129,9 @@ class AnsatzEmbeddingKernel(BaseEstimator, ClassifierMixin):
         @qml.qnode(dev, **self.qnode_kwargs)
         def kernel_circuit(x):
             params = random_params(num_wires=num_wires, num_layers=num_layers)
-            ansatz(x[:self.n_qubits_], params, wires=wires)
+            ansatz(x[: self.n_qubits_], params, wires=wires)
             adjoint_ansatz = qml.adjoint(ansatz)
-            adjoint_ansatz(x[self.n_qubits_:], params, wires=wires)
+            adjoint_ansatz(x[self.n_qubits_ :], params, wires=wires)
             return qml.probs(wires=wires)
 
         self.circuit = kernel_circuit
