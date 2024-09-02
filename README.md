@@ -1,5 +1,7 @@
 # Quantum Computing Utilities for Python
 
+[![DOI](https://zenodo.org/badge/724659579.svg)](https://zenodo.org/doi/10.5281/zenodo.13632281)
+
 This library is dedicated to quantum computing, featuring gate implementations, algorithms, and utilities. This repository serves as a recollection of assignments and utilities developed for the Master's program in Quantum Computing at UNIR. It includes educational assignment documents and a set of Jupyter notebooks for learning purposes.
 
 ## Overview
