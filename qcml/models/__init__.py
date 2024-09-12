@@ -55,9 +55,7 @@ from qcml.models.classical.perceptron import Perceptron as PerceptronCustom_base
 from qcml.models.classical.kernel_perceptron import (
     KernelPerceptron as KernelPerceptron_base,
 )
-from qcml.models.classical.kernel_mlp import (
-    KernelMLPClassifierWrapper as KernelMLPClassifier,
-)
+from qcml.models.classical.kernel_mlp import KernelMLPClassifier
 
 from qcml.models.quantum.ansatz_embedding_kernel import AnsatzEmbeddingKernel
 
@@ -244,7 +242,7 @@ class LinearSVC(LinearSVC_base):
         class_weight=None,  # Weights associated with classes
         verbose=0,  # Enable verbose output
         random_state=None,  # Seed for the random number generator
-        max_iter=1000,  # Hard limit on iterations within solver
+        max_iter=2000,  # Hard limit on iterations within solver
     ):
         super().__init__(
             C=C,
@@ -270,7 +268,7 @@ class SVC(SVC_base):
         shrinking=True,  # Whether to use the shrinking heuristic
         probability=False,  # Whether to enable probability estimates
         tol=0.001,  # Tolerance for stopping criterion
-        max_iter=-1,  # Hard limit on iterations within solver, or -1 for no limit
+        max_iter=2000,  # Hard limit on iterations within solver, or -1 for no limit
         random_state=None,  # Seed for the random number generator
     ):
         super().__init__(
@@ -294,7 +292,7 @@ class Perceptron(Perceptron_base):
         alpha=0.0001,  # Regularization strength
         l1_ratio=0.15,  # Ratio of L1 regularization (used only if penalty is 'elasticnet')
         fit_intercept=True,  # Whether to calculate the intercept for this model
-        max_iter=1000,  # Maximum number of passes over the training data
+        max_iter=2000,  # Maximum number of passes over the training data
         tol=0.001,  # The stopping criterion (tolerance)
         shuffle=True,  # Whether to shuffle the training data after each epoch
         verbose=0,  # The verbosity level

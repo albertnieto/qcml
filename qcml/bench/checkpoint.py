@@ -29,8 +29,7 @@ def save_checkpoint(
     dataset_name,
     results_path="checkpoints/",
 ):
-    classifier_name_str = "+".join([clf.__name__ for clf in classifier_name])
-    checkpoint_file_name = f"qcml-{experiment_name}-{classifier_name_str}-{dataset_name}-batch{batch_idx}.json"
+    checkpoint_file_name = f"qcml-{experiment_name}-{classifier_name}-{dataset_name}-batch{batch_idx}.json"
     checkpoint_file_path = os.path.join(results_path, checkpoint_file_name)
 
     if not os.path.exists(results_path):
@@ -72,7 +71,6 @@ def delete_checkpoints(
         f"qcml-{experiment_name}-{classifier_name_str}-{dataset_name}.json"
     )
     checkpoint_file_path = os.path.join(results_path, checkpoint_file_name)
-    print(os.path.join(results_path, checkpoint_file_name))
     if os.path.exists(checkpoint_file_path):
         os.remove(checkpoint_file_path)
         logger.info(

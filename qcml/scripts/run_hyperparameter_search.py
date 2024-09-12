@@ -27,11 +27,11 @@ import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV
-from qml_benchmarks.hyperparam_search_utils import (
+from qcml.utils.hyperparam_search import (
     read_data,
     construct_hyperparameter_grid,
 )
-from qml_benchmarks.hyperparameter_settings import hyper_parameter_settings
+from qcml.bench.hyperparameter_settings import hyper_parameter_settings
 
 np.random.seed(42)
 

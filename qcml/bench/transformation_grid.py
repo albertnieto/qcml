@@ -14,7 +14,9 @@
 
 from qcml.bench.kernel_grid import kernel_grid
 from qcml.utils.kernel import kernel_transform
+import logging
 
+logger = logging.getLogger(__name__)
 
 def get_kernel_transform():
 
@@ -44,5 +46,6 @@ def get_kernel_transform():
 
     # Generate transformation_func
     transformation_func = [None] + [kernel_transform] * (len(transformation_params) - 1)
-
+    logger.debug(f"Getting kernel transformation with {len(transformation_func)} combinations")
+    
     return transformation_func, transformation_params

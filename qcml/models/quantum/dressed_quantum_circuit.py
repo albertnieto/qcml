@@ -260,6 +260,7 @@ class DressedQuantumCircuitClassifier(BaseEstimator, ClassifierMixin):
 
 
 class DressedQuantumCircuitClassifierOnlyNN(DressedQuantumCircuitClassifier):
+
     def construct_model(self):
         def dressed_circuit(params, x):
             x = self.input_transform(params, x)

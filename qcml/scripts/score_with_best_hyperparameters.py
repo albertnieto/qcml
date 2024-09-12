@@ -24,7 +24,7 @@ import pandas as pd
 logging.getLogger().setLevel(logging.INFO)
 from importlib import import_module
 from pathlib import Path
-from qml_benchmarks.hyperparam_search_utils import read_data, csv_to_dict
+from qcml.utils.hyperparam_search import read_data, csv_to_dict
 
 np.random.seed(42)
 

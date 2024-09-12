@@ -48,7 +48,7 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
         self.alpha = None
         self.sv = None
         self.sv_y = None
-        self.classes_ = jnp.array([0.0, 1.0], dtype=jnp.int32)
+        self.original_labels = None  # Store original labels
 
     def _is_fitted(self):
         """Check if the model is fitted."""
@@ -92,6 +92,17 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
         X (array): Training data.
         y (array): Training labels.
         """
+        # Store original labels for correct prediction transformation later
+        self.original_labels = jnp.unique(y)
+
+        # Transform labels 0 -> -1, 1 -> 1 if necessary
+        if jnp.array_equal(self.original_labels, jnp.array([0, 1])):
+            y_transformed = jnp.where(y == 0, -1, 1)
+        elif jnp.array_equal(self.original_labels, jnp.array([-1, 1])):
+            y_transformed = y
+        else:
+            raise ValueError("y should contain only 0 and 1, or -1 and 1.")
+
         if not callable(self.kernel) and self.kernel != "precomputed":
             raise ValueError("No valid kernel function provided.")
 
@@ -108,11 +119,11 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
 
         if self.n_iter != -1:
             for _ in range(self.n_iter):
-                alpha = self._fit_iteration(K, y, alpha)
+                alpha = self._fit_iteration(K, y_transformed, alpha)
         else:
             while not converged and iter_idx < self.max_iter:
-                alpha_new = self._fit_iteration(K, y, alpha)
-                converged = jnp.all(alpha_new == alpha)
+                alpha_new = self._fit_iteration(K, y_transformed, alpha)
+                converged = jnp.allclose(alpha_new, alpha, atol=1e-5)
                 alpha = alpha_new
                 iter_idx += 1
 
@@ -121,7 +132,7 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
         sv = self.alpha > 1e-5
         self.alpha = self.alpha[sv]
         self.sv = X[sv] if self.kernel != "precomputed" else jnp.arange(K.shape[0])[sv]
-        self.sv_y = y[sv]
+        self.sv_y = y_transformed[sv]
         self.fitted = True
 
     def project(self, X):
@@ -162,7 +173,13 @@ class KernelPerceptron(BaseEstimator, ClassifierMixin):
         array: Predicted class labels.
         """
         X = jnp.atleast_2d(X)
-        return jnp.sign(self.project(X))
+        decision_values = self.project(X)
+
+        # Transform back to the original label set
+        if jnp.array_equal(self.original_labels, jnp.array([0, 1])):
+            return jnp.where(decision_values >= 0, 1, 0)
+        elif jnp.array_equal(self.original_labels, jnp.array([-1, 1])):
+            return jnp.where(decision_values >= 0, 1, -1)
 
     def predict_proba(self, X):
         """

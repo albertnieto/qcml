@@ -46,6 +46,7 @@ def tensor_ops(ops, idxs, n_qubits):
 
 
 class QuantumBoltzmannMachine(BaseEstimator, ClassifierMixin):
+
     def __init__(
         self,
         visible_qubits="single",
@@ -291,6 +292,7 @@ class QuantumBoltzmannMachine(BaseEstimator, ClassifierMixin):
 
 
 class QuantumBoltzmannMachineSeparable(QuantumBoltzmannMachine):
+
     def construct_model(self):
         def qubit_gibbs_state(thetas, x):
             H = sigmaZ * jnp.dot(thetas[0], x) + sigmaX * jnp.dot(thetas[1], x)

@@ -27,7 +27,7 @@ def separable_kernel(
     x1,
     x2,
     encoding_layers=1,
-    jit=True,
+    jit=False,
     dev_type="default.qubit.jax",
     qnode_kwargs={"interface": "jax", "diff_method": None},
 ):
@@ -70,7 +70,6 @@ def separable_kernel(
 
     return kernel_value
 
-
 def projected_quantum_kernel(
     x1,
     x2,
@@ -78,7 +77,7 @@ def projected_quantum_kernel(
     t=1.0 / 3,
     trotter_steps=5,
     gamma_factor=1.0,
-    jit=True,
+    jit=False,
     dev_type="default.qubit.jax",
     qnode_kwargs={"interface": "jax-jit", "diff_method": None},
 ):
@@ -87,7 +86,6 @@ def projected_quantum_kernel(
     # Determine the number of qubits based on the embedding type
     if embedding == "IQP":
         n_qubits = n_features
-
         def embedding_fn(x):
             qml.IQPEmbedding(x, wires=range(n_qubits), n_repeats=2)
 
@@ -95,7 +93,6 @@ def projected_quantum_kernel(
         n_qubits = n_features + 1
         rotation_angles = jnp.array(np.random.uniform(size=(n_qubits, 3)) * np.pi * 2)
         evol_time = t / trotter_steps * (n_qubits - 1)
-
         def embedding_fn(x):
             for i in range(n_qubits):
                 qml.Rot(
@@ -148,16 +145,13 @@ def iqp_embedding_kernel(
     x1,
     x2,
     repeats=1,
-    jit=True,
+    jit=False,
     dev_type="default.qubit.jax",
     qnode_kwargs={"interface": "jax-jit", "diff_method": None},
 ):
     n_qubits = x1.shape[0]  # Number of qubits equals the number of features
     dev = qml.device(dev_type, wires=n_qubits)
     # logger.debug(f"IQP embedding kernel is using {n_qubits} qubits")
-
-    x1 = min_max_scale(jnp.array(x1))
-    x2 = min_max_scale(jnp.array(x2))
 
     @qml.qnode(dev, **qnode_kwargs)
     def circuit(x1, x2):
@@ -170,23 +164,25 @@ def iqp_embedding_kernel(
     if jit:
         circuit = jax.jit(circuit)
 
-    return circuit(x1, x2)  # Return a single scalar value for the pair (x1, x2)
+    kernel_value = circuit(x1, x2)
+    
+    # Add a small jitter to prevent identical values
+    kernel_value += 1e-8 * jnp.sign(kernel_value)
+
+    return kernel_value
 
 
 def angle_embedding_kernel(
     x1,
     x2,
     rotation="Y",
-    jit=True,
+    jit=False,
     dev_type="default.qubit.jax",
     qnode_kwargs={"interface": "jax-jit", "diff_method": None},
 ):
     n_qubits = x1.shape[0]
     dev = qml.device(dev_type, wires=n_qubits)
     # logger.debug(f"Angle embedding kernel is using {n_qubits} qubits")
-
-    x1 = min_max_scale(jnp.array(x1))
-    x2 = min_max_scale(jnp.array(x2))
 
     @qml.qnode(dev, **qnode_kwargs)
     def circuit(x1, x2):
@@ -201,33 +197,25 @@ def angle_embedding_kernel(
 
 
 def amplitude_embedding_kernel(
-    x1, x2, jit=True, dev_type="default.qubit.jax", qnode_kwargs=None
+    x1,
+    x2,
+    pad_with=0.0,
+    normalize=True,  # This controls the normalization within the embedding
+    jit=False,
+    dev_type="default.qubit.jax",
+    qnode_kwargs={"interface": "jax-jit", "diff_method": None},
 ):
-    num_qubits = len(x1)  # Number of qubits equals the number of features
-    # logger.debug(f"Amplitude embedding kernel is using {num_qubits} qubits")
-    dev = qml.device(dev_type, wires=num_qubits)
+    n_qubits = int(np.ceil(np.log2(max(len(x1), len(x2)))))
+    dev = qml.device(dev_type, wires=n_qubits)
 
-    @qml.qnode(dev, interface="jax", diff_method="backprop", **(qnode_kwargs or {}))
-    def circuit(x1, x2):
-        required_dim = 2**num_qubits
-
-        def pad_features(features, required_dim, pad_value=0.0):
-            features = jnp.array(features)
-            if len(features) < required_dim:
-                padding = jnp.array([pad_value] * (required_dim - len(features)))
-                features = jnp.concatenate([features, padding])
-            return features
-
-        x1 = pad_features(x1, required_dim)
-        x2 = pad_features(x2, required_dim)
-
-        qml.AmplitudeEmbedding(x1, wires=range(num_qubits), normalize=True)
-        qml.adjoint(qml.AmplitudeEmbedding)(x2, wires=range(num_qubits), normalize=True)
-        return qml.expval(
-            qml.PauliZ(0)
-        )  # Returning the expectation value of PauliZ on the first qubit
+    @qml.qnode(dev, **qnode_kwargs)
+    def circuit(x1, x2, n_qubits):
+        logger.info(f"Amplitude circuit has {n_qubits} qubits")
+        qml.AmplitudeEmbedding(x1, wires=range(n_qubits), pad_with=pad_with, normalize=normalize)
+        qml.adjoint(qml.AmplitudeEmbedding)(x2, wires=range(n_qubits), pad_with=pad_with, normalize=normalize)
+        return qml.expval(qml.PauliZ(0))
 
     if jit:
         circuit = jax.jit(circuit)
 
-    return circuit(x1, x2)  # Return a single scalar value for the pair (x1, x2)
+    return circuit(x1, x2, n_qubits)

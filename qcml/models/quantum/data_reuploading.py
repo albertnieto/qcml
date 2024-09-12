@@ -328,6 +328,7 @@ class DataReuploadingClassifier(BaseEstimator, ClassifierMixin):
 
 
 class DataReuploadingClassifierNoScaling(DataReuploadingClassifier):
+
     def construct_model(self):
         """Construct the quantum circuit used in the model."""
 
@@ -389,6 +390,7 @@ class DataReuploadingClassifierNoScaling(DataReuploadingClassifier):
 
 
 class DataReuploadingClassifierNoTrainableEmbedding(DataReuploadingClassifier):
+
     def construct_model(self):
         """Construct the quantum circuit used in the model."""
 
@@ -460,6 +462,7 @@ class DataReuploadingClassifierNoTrainableEmbedding(DataReuploadingClassifier):
 
 
 class DataReuploadingClassifierNoCost(DataReuploadingClassifier):
+
     def fit(self, X, y):
         """Fit the model to data X and labels y.
 
@@ -498,6 +501,7 @@ class DataReuploadingClassifierNoCost(DataReuploadingClassifier):
 
 
 class DataReuploadingClassifierSeparable(DataReuploadingClassifier):
+
     def construct_model(self):
         """Construct the quantum circuit used in the model."""
 

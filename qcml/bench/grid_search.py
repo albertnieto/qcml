@@ -18,10 +18,14 @@ import time
 import logging
 import pandas as pd
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import traceback
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from dask import delayed, compute
+from dask.distributed import LocalCluster, Client, get_worker
+import dask
 from qcml.bench.helper import (
     log_start_info,
-    evaluate_model,
+    evaluate_model, 
     evaluate_transformed_model,
 )
 from qcml.bench.kernel_grid import kernel_param_map
@@ -98,13 +102,9 @@ class GridSearch:
                     self.experiment_name_suffix = (
                         "_" + "_".join(dataset_parameters) if dataset_parameters else ""
                     )
-                    self.checkpoint_experiment_name = (
-                        f"{self.dataset_name}{self.experiment_name_suffix}"
-                    )
-                    logger.info(
-                        f"Starting execution for {cls.__name__} on dataset {self.checkpoint_experiment_name}."
-                    )
-
+                    self.checkpoint_experiment_name = f"{self.dataset_name}{self.experiment_name_suffix}"
+                    logger.info(f"Starting execution for {cls.__name__} on dataset {self.checkpoint_experiment_name}.")
+                    
                     result_filename = f"{cls.__name__}-{self.checkpoint_experiment_name}_best-hypa.csv"
                     result_filepath = os.path.join(self.results_path, result_filename)
 
@@ -113,16 +113,18 @@ class GridSearch:
                             f"Skipping execution for {cls.__name__} on {self.checkpoint_experiment_name}. Results already exist."
                         )
                         continue
-
+                    
                     self.start_batch_idx = 0
                     checkpoint_data, batch_idx = get_highest_batch_checkpoint(
                         [cls], self.checkpoint_experiment_name, self.dataset_name
                     )
+                    
                     if checkpoint_data:
                         logger.info(
                             f"Resuming from checkpoint {batch_idx} for {cls.__name__} on {self.dataset_name}."
                         )
                         self.results = checkpoint_data["results"]
+                        self.results_last_checkpoint = checkpoint_data["results"]
                         self.start_batch_idx = batch_idx
 
                     X, y = get_dataset(
@@ -140,16 +142,6 @@ class GridSearch:
                         cls, grid_to_pass, X_train, y_train, X_val, y_val, return_best
                     )
                     all_results.append(result)
-                    delete_checkpoints(
-                        [cls], self.checkpoint_experiment_name, self.dataset_name
-                    )
-
-                save_results_to_csv(
-                    self.results,
-                    self.classifier,
-                    self.experiment_name,
-                    self.results_path,
-                )
 
                 return all_results if not return_best else self._get_best_result()
 
@@ -164,6 +156,7 @@ class GridSearch:
                         f"Resuming from checkpoint {batch_idx} for {self.classifier.__name__} on custom dataset."
                     )
                     self.results = checkpoint_data["results"]
+                    self.results_last_checkpoint = checkpoint_data["results"]
                     self.start_batch_idx = batch_idx
                 else:
                     self.start_batch_idx = 0
@@ -177,9 +170,7 @@ class GridSearch:
                     y_val=y_val,
                     split_ratio=self.split_ratio,
                 )
-                delete_checkpoints(
-                    self.classifier, self.checkpoint_experiment_name, "custom"
-                )
+                delete_checkpoints(self.classifier, self.checkpoint_experiment_name, "custom")
                 return self._grid_search_single_classifier(
                     self.classifier,
                     self.param_grid,
@@ -225,9 +216,13 @@ class GridSearch:
             y_val,
         )
 
+        if not self.results:
+            self.results = self.results_last_checkpoint
+        
         save_results_to_csv(
-            self.results, classifier_name, self.experiment_name, self.results_path
+            self.results, classifier_name, self.checkpoint_experiment_name, self.results_path
         )
+        
         delete_checkpoints([cls], self.checkpoint_experiment_name, self.dataset_name)
 
         if return_best:
@@ -245,134 +240,141 @@ class GridSearch:
         y_train,
         X_val,
         y_val,
+        n_jobs=2  # Specify the number of workers
     ):
         best_score, best_params, best_model = -np.inf, None, None
-
+        self.results = []
+        
         total_combinations = len(combinations) * len(transformation_combinations)
+        combinations_list = [
+                (trans_func, trans_params, params)
+                for trans_func, trans_params in transformation_combinations
+                for params in combinations
+            ]
         num_batches = int(np.ceil(total_combinations / self.batch_size))
         logger.info(
             f"Total combinations: {total_combinations}, Batch size: {self.batch_size}, Number of batches: {num_batches}"
         )
         logger.debug(f"Logs will be printed by: {self.info_eval_criteria}")
-
+        
         for batch_idx in range(self.start_batch_idx, num_batches):
             if self.info_eval_criteria == "batch":
                 logger.info(f"Starting batch {batch_idx + 1} of {num_batches}")
-
+    
             start_idx = batch_idx * self.batch_size
             end_idx = min(start_idx + self.batch_size, total_combinations)
-            batch_combinations = combinations[start_idx:end_idx]
-
-            with ThreadPoolExecutor(max_workers=self.n_jobs) as executor:
-                futures = []
-
-                for trans_func, trans_params in transformation_combinations:
-                    if trans_func is not None:
-                        (
-                            X_train_trans,
-                            X_val_trans,
-                            y_train_trans,
-                            y_val_trans,
-                        ) = trans_func(X_train, X_val, y_train, y_val, **trans_params)
-                    else:
-                        X_train_trans, X_val_trans, y_train_trans, y_val_trans = (
-                            X_train,
-                            X_val,
-                            y_train,
-                            y_val,
-                        )
-                    logger.debug(
-                        f"Original X shape: {X_train.shape}, Transformed X shape: {X_train_trans.shape}"
+            
+            batch_combinations = combinations_list[start_idx:end_idx]
+            
+            logger.debug(f"Batch combinations {len(batch_combinations)} for a batch with size: {self.batch_size}??")
+            for trans_func, trans_params, params in batch_combinations:
+                if trans_func is not None:
+                    X_train_trans, X_val_trans, y_train_trans, y_val_trans = (
+                        trans_func(X_train, X_val, y_train, y_val, **trans_params)
                     )
-                    for params in batch_combinations:
-                        clean_params = {
-                            k: v
-                            for k, v in params.items()
-                            if k not in ["kernel_func", "kernel_params"]
-                        }
-                        logger.debug(
-                            f"Classifier parameters sent to the future: {clean_params}"
-                        )
-                        futures.append(
-                            executor.submit(
-                                evaluate_model,
-                                clean_params,
-                                classifier,
-                                X_train_trans,
-                                y_train_trans,
-                                X_val_trans,
-                                y_val_trans,
-                                self.use_jax,
-                                params.get("kernel_func"),
-                                params.get("kernel_params", {}),
-                            )
-                        )
+                else:
+                    X_train_trans, X_val_trans, y_train_trans, y_val_trans = (
+                        X_train,
+                        X_val,
+                        y_train,
+                        y_val,
+                    )
+                logger.debug(
+                    f"Data transformed, original X shape: {X_train.shape[1]}, Transformed X shape: {X_train_trans.shape[1]}"
+                )
+                logger.debug(f"start_idx: {start_idx}, end_idx:{end_idx}, batch_idx:{batch_idx}, num_batches: {num_batches}")
+                clean_params = {
+                    k: v
+                    for k, v in params.items()
+                    if k not in ["transf_func", "transf_params"]
+                    and not (
+                        (k in ["kernel_func", "kernel_params"] and "kernel" in params and params.get("kernel") == "precomputed")
+                    )
+                }
 
-                for i, future in enumerate(as_completed(futures)):
-                    params = None
-                    try:
-                        (
+                kernel_func = params.pop("kernel_func", None)
+                kernel_params = params.pop("kernel_params", {})
+        
+                logger.debug(f"Classifier parameters: {clean_params}")
+                if kernel_func is not None and params.get("kernel") == "precomputed":
+                    logger.debug(f"Kernel {kernel_params} parameters: {kernel_params}")
+    
+                try:
+                    result = evaluate_model(
+                        clean_params,
+                        classifier,
+                        X_train_trans,
+                        y_train_trans,
+                        X_val_trans,
+                        y_val_trans,
+                        self.use_jax,
+                        kernel_func,
+                        kernel_params,
+                    )
+                    
+                    logger.debug(f"Result of evaluation is {result}")
+                    accuracy, f1, precision, execution_time, params, model = result
+
+                    self.results.append(
+                        {
+                            "experiment_name": self.checkpoint_experiment_name,
+                            "classifier": classifier_name,
+                            "params": params,
+                            "kernel_func": kernel_func.__name__ if kernel_func else None,
+                            "kernel_params": kernel_params,
+                            "accuracy": accuracy,
+                            "f1_score": f1,
+                            "precision": precision,
+                            "execution_time": execution_time,
+                            "transf_func": trans_func.__name__ if trans_func else None,
+                            "transf_params": {
+                                key: (value.__name__ if callable(value) else value)
+                                for key, value in trans_params.items()
+                            } if trans_params else None,
+                        }
+                    )
+                    
+                    if accuracy > best_score:
+                        best_score, best_params, best_model = (
                             accuracy,
-                            f1,
-                            precision,
-                            execution_time,
                             params,
                             model,
-                        ) = future.result()
-                        kernel_func = params.pop("kernel_func", None)
-                        kernel_params = params.pop("kernel_params", None)
-                        transf_func = params.pop("transf_func", None)
-                        transf_params = params.pop("transf_params", None)
-
-                        self.results.append(
-                            {
-                                "experiment_name": self.experiment_name,
-                                "classifier": classifier_name,
-                                "params": params,
-                                "kernel_func": kernel_func,
-                                "kernel_params": kernel_params,
-                                "accuracy": accuracy,
-                                "f1_score": f1,
-                                "precision": precision,
-                                "execution_time": execution_time,
-                                "transf_func": transf_func,
-                                "transf_params": transf_params,
-                            }
                         )
 
-                        if accuracy > best_score:
-                            best_score, best_params, best_model = (
-                                accuracy,
-                                params,
-                                model,
-                            )
-
-                        if self.info_eval_criteria == "single":
-                            logger.info(
-                                f"Evaluation {start_idx + i + 1}/{total_combinations} finished: {params}, time: {execution_time:.2f}s"
-                            )
-                    except Exception as e:
-                        logger.error(f"Error with parameters {params}: {e}")
-                        if self.error_traceback:
-                            logger.error(traceback.format_exc())
-                        if self.error_stop:
-                            raise e
-
+                    result_counter = len(self.results)
+                        
+                    if self.info_eval_criteria == "single":
+                        if kernel_func is not None:
+                            evaluation_output = f"Evaluation {result_counter}/{total_combinations} finished: {params}, kernel: {kernel_func} with {kernel_params}, time: {execution_time:.2f}s, accuracy: {accuracy}"
+                        else:
+                            evaluation_output = f"Evaluation {result_counter}/{total_combinations} finished: {params}, time: {execution_time:.2f}s, accuracy: {accuracy}"
+                        logger.info(evaluation_output)
+                    
+                    
+                    
+                except Exception as e:
+                    logger.error(f"Error with parameters {params}: {e}")
+                    if self.error_traceback:
+                        logger.error(traceback.format_exc())
+                    if self.error_stop:
+                        raise e
+            logger.debug(f"Finished {batch_idx} batch")
             if self.info_eval_criteria == "batch":
                 logger.info(
                     f"Batch {batch_idx + 1} of {num_batches} completed ({min(end_idx, total_combinations)}/{total_combinations})."
                 )
-
+            
             if (batch_idx + 1) % self.checkpoint_interval == 0:
                 save_checkpoint(
                     results=self.results,
-                    classifier_name=[classifier],
+                    classifier_name=classifier_name,
                     experiment_name=self.checkpoint_experiment_name,
                     batch_idx=batch_idx + 1,
                     dataset_name=self.dataset_name,
                 )
-
+    
         return best_score, best_params, best_model
+
 
     def _prepare_param_grid(self, cls):
         if isinstance(self.param_grid, dict):

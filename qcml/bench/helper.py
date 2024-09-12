@@ -32,6 +32,7 @@ from qcml.bench.filter_grid import (
 )
 from qcml.data import get_dataset
 from qcml.utils.kernel import (
+    gram_matrix,
     compute_gram_matrix,
     compute_kernel_parallel,
     jitted_gram_matrix,
@@ -41,10 +42,10 @@ from qcml.utils.dataset import validate_input_data
 from qcml.utils.gpu.info import get_gpu_info
 from qcml.utils.gpu.gputil import *
 from qcml.utils.storage import save_results_to_csv
+from qcml.utils.log import setup_evaluate_model_logging
 
-multiprocessing.set_start_method("spawn", force=True)
+#multiprocessing.set_start_method("spawn", force=True)
 logger = logging.getLogger(__name__)
-
 
 def log_start_info(classifier_name, combinations, n_jobs):
     logger.info(
@@ -65,6 +66,7 @@ def evaluate_model(
     kernel_func=None,
     kernel_params={},
 ):
+    #logger = setup_evaluate_model_logging(__name__)
     start_time = time.time()
 
     if use_jax:
@@ -73,22 +75,27 @@ def evaluate_model(
         X_val = jnp.array(X_val)
         y_val = jnp.array(y_val)
 
-    if kernel_func:
+    if kernel_func and params.get("kernel") == "precomputed":
         old_X_Train = X_train
-        X_train = jitted_gram_matrix_batched(
+        X_train = gram_matrix(
             X1=X_train, X2=X_train, kernel_func=kernel_func, **kernel_params
         )
-        X_val = jitted_gram_matrix_batched(
+        X_val = gram_matrix(
             X1=X_val, X2=old_X_Train, kernel_func=kernel_func, **kernel_params
         )
-        params["kernel"] = "precomputed"
 
+    logger.debug(f"Creating model for: {classifier.__name__}")
     model = classifier(**params)
+    logger.debug(f"Fitting: {classifier.__name__}")
     model.fit(np.array(X_train), np.array(y_train))
+    logger.debug(f"Predicting: {classifier.__name__}")
     predictions = model.predict(np.array(X_val))
 
+    logger.debug(f"Calculating accuracy score: {classifier.__name__}")
     accuracy = accuracy_score(np.array(y_val), predictions)
+    logger.debug(f"Calculating f1 score: {classifier.__name__}")
     f1 = f1_score(np.array(y_val), predictions, average="weighted", zero_division=0)
+    logger.debug(f"Calculating precision score: {classifier.__name__}")
     precision = precision_score(
         np.array(y_val), predictions, average="weighted", zero_division=0
     )

@@ -18,10 +18,12 @@ model_grid = {
     },
     "SVC": {
         "C": [0.1, 1, 10, 100],  # Regularization parameter
+        "kernel": ["precomputed"],
     },
     "KernelPerceptron": {
         "n_iter": [-1],  # Number of iterations
-        "max_iter": [1000],  # Maximum number of iterations
+        "max_iter": [2000],  # Maximum number of iterations
+        "kernel": ["precomputed"],
     },
     "Perceptron": {
         "eta0": [0.01, 0.1, 0.5, 1.0],  # Learning rate
@@ -53,7 +55,29 @@ model_grid = {
             0.001,
             0.01,
         ],  # Learning rate for optimizer (specific to MLPClassifierCustom)
-        "max_iter": [3000],  # Maximum number of iterations
+        "max_iter": [2000],  # Maximum number of iterations
         "num_classes": [2],  # Number of output classes
+    },
+    "KernelMLPClassifier": {
+        "hidden_layer_sizes": [
+            ("k", 50),
+            ("k", 100),
+            ("k", 100, 50),
+            ("k", 100, 100),
+        ],  # Configurations for hidden layers
+        "learning_rate_init": [
+            0.001,
+            0.01,
+        ],  # Initial learning rate (specific to MLPClassifier)
+        "max_iter": [2000],  # Maximum number of iterations
+        "num_classes": [2],  # Number of output classes
+    },
+    "QuanvolutionalNeuralNetwork": {
+        "max_vmap": [32],
+        "batch_size": [32],
+        "learning_rate": [0.0001, 0.001, 0.01],
+        "n_qchannels": [1, 5, 10],
+        "qkernel_shape": [2, 3],
+        "kernel_shape": [2, 3, 5],
     },
 }

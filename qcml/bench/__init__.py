@@ -21,6 +21,7 @@ from .kernel_grid import (
     quantum_kernel_param_map,
     kernel_grid,
     kernel_param_map,
+    reduced_kernel_grid,
 )
 from .transformation_grid import get_kernel_transform
 
@@ -34,4 +35,5 @@ __all__ = [
     "kernel_grid",
     "kernel_param_map",
     "get_kernel_transform",
+    "reduced_kernel_grid",
 ]
