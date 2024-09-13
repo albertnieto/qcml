@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qcml"
+version = "0.1.0"
+description = "A benchmarking library for quantum and classical machine learning, with specialized support for evaluating kernel methods."
+readme = "README.md"
+authors = [
+    { name = "Albert Nieto", email = "nietom.albert@gmail.com" }
+]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/albertnieto/qcml"
