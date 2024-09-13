@@ -1,11 +1,11 @@
 # Copyright 2024 Albert Nieto
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,16 +14,17 @@
 
 import itertools
 import logging
+from typing import Callable, List, Dict, Tuple, Any, Union
 from qcml.utils.types import convert_to_hashable
 
 logger = logging.getLogger(__name__)
 
 from itertools import product
 
-
 def generate_transformation_combinations(
-    transformation_func, transformation_param_grids
-):
+    transformation_func: List[Callable],
+    transformation_param_grids: List[Dict[str, List[Any]]]
+) -> List[Tuple[Callable, Dict[str, Any]]]:
     """
     Generate all possible combinations of transformation functions and their corresponding parameter grids.
 
@@ -57,7 +58,7 @@ def generate_transformation_combinations(
                        (<function translate at 0x...>, {'offset': 1})]
     """
     if transformation_func is not None:
-        transformation_combinations = []
+        transformation_combinations: List[Tuple[Callable, Dict[str, Any]]] = []
 
         for func, param_grid in zip(transformation_func, transformation_param_grids):
             param_names = param_grid.keys()
@@ -70,16 +71,18 @@ def generate_transformation_combinations(
         logger.info(
             f"Generated {len(transformation_combinations)} transformation combinations."
         )
-        # logger.debug(f"- {transformation_combinations}\n")
         return transformation_combinations
     else:
         return [(None, {})]
 
 
-
 def prepare_param_grid(
-    param_grid, kernel_param_map, model_grid, classifier, log_combinations
-):
+    param_grid: Union[Dict[str, List[Any]], List[Any]],
+    kernel_param_map: Dict[str, List[str]],
+    model_grid: Dict[str, Dict[str, List[Any]]],
+    classifier: Any,
+    log_combinations: bool
+) -> Tuple[List[Dict[str, Any]], str]:
     """
     Prepare a parameter grid for a given classifier and its associated kernel parameters.
 
@@ -112,14 +115,14 @@ def prepare_param_grid(
         >>> prepare_param_grid(param_grid, kernel_param_map, model_grid, classifier, log_combinations=True)
         >>> # Output: (list_of_combinations, 'SVC')
     """
+    classifier_name = getattr(classifier, "__name__", "unavailable_clf_name")
+
     if isinstance(param_grid, dict):
         combinations = filter_valid_combinations(
             param_grid, kernel_param_map, log_combinations
         )
     elif isinstance(param_grid, list) and len(param_grid) == 2:
-        classifier = param_grid[0]
         kernel_param_grid = param_grid[1]
-        classifier_name = getattr(classifier, "__name__", str(classifier))
         param_grid = model_grid.get(classifier_name, {})
         param_grid["kernel_func"] = [kp["kernel_func"] for kp in kernel_param_grid]
         param_grid["kernel_params"] = [kp["kernel_params"] for kp in kernel_param_grid]
@@ -127,8 +130,6 @@ def prepare_param_grid(
             param_grid, kernel_param_map, log_combinations
         )
     elif isinstance(param_grid, list) and len(param_grid) == 1:
-        classifier = param_grid[0]
-        classifier_name = getattr(classifier, "__name__", str(classifier))
         param_grid = model_grid.get(classifier_name, {})
         combinations = filter_valid_combinations(param_grid)
     else:
@@ -136,7 +137,6 @@ def prepare_param_grid(
             "param_grid should either be a dictionary or a list with two elements: [classifier, kernel_param_grid]."
         )
 
-    # Log the debug information
     logger.debug(
         f"Prepared {len(combinations)} combinations for classifier '{classifier_name}'."
     )
@@ -144,10 +144,11 @@ def prepare_param_grid(
     return combinations, classifier_name
 
 
-
 def filter_valid_combinations(
-    param_grid, kernel_param_map=None, log_combinations=False
-):
+    param_grid: Dict[str, List[Any]],
+    kernel_param_map: Dict[str, List[str]] = None,
+    log_combinations: bool = False
+) -> List[Dict[str, Any]]:
     """
     Filter and validate parameter combinations from a parameter grid.
 
@@ -176,7 +177,7 @@ def filter_valid_combinations(
         >>> # Output: [{'C': 1, 'kernel_func': some_kernel_func, 'kernel_params': {'param1': 0.1}},
         >>> #          {'C': 10, 'kernel_func': some_kernel_func, 'kernel_params': {'param2': 0.2}}]
     """
-    valid_combinations = []
+    valid_combinations: List[Dict[str, Any]] = []
     invalid_combinations = 0
     seen_combinations = set()
 
@@ -206,15 +207,15 @@ def filter_valid_combinations(
             if kernel_param_keys and not kernel_params:
                 invalid_combinations += 1
                 if log_combinations:
-                    pass#logger.debug(f"Invalid combination due to missing kernel params: {params}")
+                    logger.debug(f"Invalid combination due to missing kernel params: {params}")
             elif all(param in kernel_param_keys for param in kernel_params.keys()):
                 valid_combinations.append(params)
                 if log_combinations:
-                    pass#logger.debug(f"Valid combination: {params}")
+                    logger.debug(f"Valid combination: {params}")
             else:
                 invalid_combinations += 1
                 if log_combinations:
-                    pass#logger.debug(f"Invalid combination due to incorrect kernel params: {params}")
+                    logger.debug(f"Invalid combination due to incorrect kernel params: {params}")
 
     logger.info(
         f"Total combinations: {total_combinations}, Valid combinations: {len(valid_combinations)}, Invalid combinations: {invalid_combinations}"
