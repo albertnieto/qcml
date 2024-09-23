@@ -41,7 +41,9 @@ from qcml.models.quantum.quantum_boltzmann_machine import (
 )
 from qcml.models.quantum.quantum_kitchen_sinks import QuantumKitchenSinks
 from qcml.models.quantum.quantum_metric_learning import QuantumMetricLearner
-from qcml.models.quantum.quanvolutional_neural_network import QuanvolutionalNeuralNetwork
+from qcml.models.quantum.quanvolutional_neural_network import (
+    QuanvolutionalNeuralNetwork,
+)
 from qcml.models.quantum.separable import (
     SeparableVariationalClassifier,
     SeparableKernelClassifier,

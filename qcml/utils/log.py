@@ -17,15 +17,18 @@ import os
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 import json
-import dask.config
+
 import sys
 
 try:
     from slack_sdk import WebClient
     from slack_sdk.errors import SlackApiError
+    import dask.config
 
+    dask_available = True
     slack_available = True
 except ImportError:
+    dask_available = False
     slack_available = False
 
 # Constants
@@ -46,14 +49,18 @@ DEFAULT_LOG_FILENAME = f"qcml-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"
 DEFAULT_LOG_PATH = "logs/"
 DEFAULT_LOG_FILE_MAX_BYTES = 209715200
 
+
 def setup_evaluate_model_logging(logger_name):
     # Extract log file name and other settings from environment variables
-    log_filename = os.getenv('QCML_DASK_LOG_FILENAME')
-    logs_path = os.getenv('QCML_DASK_LOGS_PATH', 'logs/')
-    log_format = os.getenv('QCML_DASK_LOG_FORMAT', '%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)')
-    log_level = os.getenv('QCML_DASK_LEVEL', 'INFO')
-    terminal_level = os.getenv('QCML_DASK_TERMINAL_LEVEL', log_level)
-    use_color = os.getenv('QCML_DASK_USE_COLOR', 'True') == 'True'
+    log_filename = os.getenv("QCML_DASK_LOG_FILENAME")
+    logs_path = os.getenv("QCML_DASK_LOGS_PATH", "logs/")
+    log_format = os.getenv(
+        "QCML_DASK_LOG_FORMAT",
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)",
+    )
+    log_level = os.getenv("QCML_DASK_LEVEL", "INFO")
+    terminal_level = os.getenv("QCML_DASK_TERMINAL_LEVEL", log_level)
+    use_color = os.getenv("QCML_DASK_USE_COLOR", "True") == "True"
 
     # Set up the logger with the specific name
     logger = logging.getLogger(logger_name)
@@ -80,6 +87,7 @@ def setup_evaluate_model_logging(logger_name):
 
     return logger
 
+
 def set_dask_environment_variables(
     level=None,
     hide_logs=None,
@@ -98,39 +106,45 @@ def set_dask_environment_variables(
     add_context=False,
     context_info=None,
     slack_notify=False,
-    slack_credentials=None
+    slack_credentials=None,
 ):
     """
     Sets environment variables for Dask logging configuration based on log setup parameters.
     Environment variables are prefixed with 'QCML_DASK_'.
     """
-    os.environ['QCML_DASK_LEVEL'] = level or 'INFO'
-    os.environ['QCML_DASK_OUTPUT'] = output or 'both'
-    os.environ['QCML_DASK_LOGS_PATH'] = logs_path or 'logs/'
-    os.environ['QCML_DASK_LOG_FILENAME'] = log_filename or f"qcml-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"
-    os.environ['QCML_DASK_MAX_BYTES'] = str(max_bytes or 1048576)
-    os.environ['QCML_DASK_BACKUP_COUNT'] = str(backup_count or 3)
-    os.environ['QCML_DASK_TERMINAL_LEVEL'] = terminal_level or level or 'INFO'
-    os.environ['QCML_DASK_FILE_LEVEL'] = file_level or level or 'DEBUG'
-    os.environ['QCML_DASK_LOG_FORMAT'] = log_format or "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
-    os.environ['QCML_DASK_USE_JSON'] = str(use_json)
-    os.environ['QCML_DASK_USE_COLOR'] = str(use_color)
-    os.environ['QCML_DASK_ASYNCHRONOUS'] = str(asynchronous)
-    os.environ['QCML_DASK_ADD_CONTEXT'] = str(add_context)
-    os.environ['QCML_DASK_SLACK_NOTIFY'] = str(slack_notify)
+    os.environ["QCML_DASK_LEVEL"] = level or "INFO"
+    os.environ["QCML_DASK_OUTPUT"] = output or "both"
+    os.environ["QCML_DASK_LOGS_PATH"] = logs_path or "logs/"
+    os.environ["QCML_DASK_LOG_FILENAME"] = (
+        log_filename or f"qcml-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"
+    )
+    os.environ["QCML_DASK_MAX_BYTES"] = str(max_bytes or 1048576)
+    os.environ["QCML_DASK_BACKUP_COUNT"] = str(backup_count or 3)
+    os.environ["QCML_DASK_TERMINAL_LEVEL"] = terminal_level or level or "INFO"
+    os.environ["QCML_DASK_FILE_LEVEL"] = file_level or level or "DEBUG"
+    os.environ["QCML_DASK_LOG_FORMAT"] = (
+        log_format
+        or "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    )
+    os.environ["QCML_DASK_USE_JSON"] = str(use_json)
+    os.environ["QCML_DASK_USE_COLOR"] = str(use_color)
+    os.environ["QCML_DASK_ASYNCHRONOUS"] = str(asynchronous)
+    os.environ["QCML_DASK_ADD_CONTEXT"] = str(add_context)
+    os.environ["QCML_DASK_SLACK_NOTIFY"] = str(slack_notify)
 
     if slack_credentials:
-        os.environ['QCML_DASK_SLACK_TOKEN'] = slack_credentials[0]
-        os.environ['QCML_DASK_SLACK_CHANNEL'] = slack_credentials[1]
-    
+        os.environ["QCML_DASK_SLACK_TOKEN"] = slack_credentials[0]
+        os.environ["QCML_DASK_SLACK_CHANNEL"] = slack_credentials[1]
+
     if hide_logs:
-        os.environ['QCML_DASK_HIDE_LOGS'] = ','.join(hide_logs)
-    
+        os.environ["QCML_DASK_HIDE_LOGS"] = ",".join(hide_logs)
+
     if keyword_filters:
-        os.environ['QCML_DASK_KEYWORD_FILTERS'] = ','.join(keyword_filters)
-    
+        os.environ["QCML_DASK_KEYWORD_FILTERS"] = ",".join(keyword_filters)
+
     if context_info:
-        os.environ['QCML_DASK_CONTEXT_INFO'] = json.dumps(context_info)
+        os.environ["QCML_DASK_CONTEXT_INFO"] = json.dumps(context_info)
+
 
 class ContextFilter(logging.Filter):
     def __init__(self, context_info):
@@ -173,6 +187,7 @@ class SlackHandler(logging.Handler):
             )
         except SlackApiError as e:
             logging.error(f"Failed to send log to Slack: {e.response['error']}")
+
 
 def setup_formatter(use_json, use_color, log_format):
     if use_json:
@@ -395,7 +410,7 @@ def log_setup(
             add_context=add_context,
             context_info=context_info,
             slack_notify=slack_notify,
-            slack_credentials=slack_credentials
+            slack_credentials=slack_credentials,
         )
         logger.info("Environment variables for Dask logging setup have been set.")
 

@@ -14,47 +14,62 @@
 
 from . import backend as bk
 
+
 def X_gate():
-    return bk.array([[0, 1],
-                     [1, 0]], dtype=bk.complex64)
+    return bk.array([[0, 1], [1, 0]], dtype=bk.complex64)
+
 
 def Y_gate():
-    return bk.array([[0, -1j],
-                     [1j, 0]], dtype=bk.complex64)
+    return bk.array([[0, -1j], [1j, 0]], dtype=bk.complex64)
+
 
 def Z_gate():
-    return bk.array([[1, 0],
-                     [0, -1]], dtype=bk.complex64)
+    return bk.array([[1, 0], [0, -1]], dtype=bk.complex64)
+
 
 def H_gate():
-    return (1 / bk.sqrt(2)) * bk.array([[1, 1],
-                                        [1, -1]], dtype=bk.complex64)
+    return (1 / bk.sqrt(2)) * bk.array([[1, 1], [1, -1]], dtype=bk.complex64)
+
 
 def S_gate():
-    return bk.array([[1, 0],
-                     [0, 1j]], dtype=bk.complex64)
+    return bk.array([[1, 0], [0, 1j]], dtype=bk.complex64)
+
 
 def T_gate():
-    return bk.array([[1, 0],
-                     [0, bk.exp(1j * bk.pi / 4)]], dtype=bk.complex64)
+    return bk.array([[1, 0], [0, bk.exp(1j * bk.pi / 4)]], dtype=bk.complex64)
+
 
 def RX_gate(theta):
-    return bk.array([[bk.cos(theta / 2), -1j * bk.sin(theta / 2)],
-                     [-1j * bk.sin(theta / 2), bk.cos(theta / 2)]], dtype=bk.complex64)
+    return bk.array(
+        [
+            [bk.cos(theta / 2), -1j * bk.sin(theta / 2)],
+            [-1j * bk.sin(theta / 2), bk.cos(theta / 2)],
+        ],
+        dtype=bk.complex64,
+    )
+
 
 def RY_gate(theta):
-    return bk.array([[bk.cos(theta / 2), -bk.sin(theta / 2)],
-                     [bk.sin(theta / 2), bk.cos(theta / 2)]], dtype=bk.complex64)
+    return bk.array(
+        [
+            [bk.cos(theta / 2), -bk.sin(theta / 2)],
+            [bk.sin(theta / 2), bk.cos(theta / 2)],
+        ],
+        dtype=bk.complex64,
+    )
+
 
 def RZ_gate(theta):
-    return bk.array([[bk.exp(-1j * theta / 2), 0],
-                     [0, bk.exp(1j * theta / 2)]], dtype=bk.complex64)
+    return bk.array(
+        [[bk.exp(-1j * theta / 2), 0], [0, bk.exp(1j * theta / 2)]], dtype=bk.complex64
+    )
+
 
 def CNOT_gate():
-    return bk.array([[1, 0, 0, 0],
-                     [0, 1, 0, 0],
-                     [0, 0, 0, 1],
-                     [0, 0, 1, 0]], dtype=bk.complex64)
+    return bk.array(
+        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=bk.complex64
+    )
+
 
 def identity_gate():
     return bk.eye(2, dtype=bk.complex64)

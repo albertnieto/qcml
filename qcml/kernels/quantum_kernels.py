@@ -70,6 +70,7 @@ def separable_kernel(
 
     return kernel_value
 
+
 def projected_quantum_kernel(
     x1,
     x2,
@@ -86,6 +87,7 @@ def projected_quantum_kernel(
     # Determine the number of qubits based on the embedding type
     if embedding == "IQP":
         n_qubits = n_features
+
         def embedding_fn(x):
             qml.IQPEmbedding(x, wires=range(n_qubits), n_repeats=2)
 
@@ -93,6 +95,7 @@ def projected_quantum_kernel(
         n_qubits = n_features + 1
         rotation_angles = jnp.array(np.random.uniform(size=(n_qubits, 3)) * np.pi * 2)
         evol_time = t / trotter_steps * (n_qubits - 1)
+
         def embedding_fn(x):
             for i in range(n_qubits):
                 qml.Rot(
@@ -165,7 +168,7 @@ def iqp_embedding_kernel(
         circuit = jax.jit(circuit)
 
     kernel_value = circuit(x1, x2)
-    
+
     # Add a small jitter to prevent identical values
     kernel_value += 1e-8 * jnp.sign(kernel_value)
 
@@ -211,8 +214,12 @@ def amplitude_embedding_kernel(
     @qml.qnode(dev, **qnode_kwargs)
     def circuit(x1, x2, n_qubits):
         logger.info(f"Amplitude circuit has {n_qubits} qubits")
-        qml.AmplitudeEmbedding(x1, wires=range(n_qubits), pad_with=pad_with, normalize=normalize)
-        qml.adjoint(qml.AmplitudeEmbedding)(x2, wires=range(n_qubits), pad_with=pad_with, normalize=normalize)
+        qml.AmplitudeEmbedding(
+            x1, wires=range(n_qubits), pad_with=pad_with, normalize=normalize
+        )
+        qml.adjoint(qml.AmplitudeEmbedding)(
+            x2, wires=range(n_qubits), pad_with=pad_with, normalize=normalize
+        )
         return qml.expval(qml.PauliZ(0))
 
     if jit:

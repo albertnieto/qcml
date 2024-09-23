@@ -16,4 +16,4 @@ from .backend import set_backend
 from .circuit import QuantumCircuit
 from .simulator import QuantumSimulator
 
-__all__ = ['set_backend', 'QuantumCircuit', 'QuantumSimulator']
+__all__ = ["set_backend", "QuantumCircuit", "QuantumSimulator"]

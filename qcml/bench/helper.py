@@ -44,8 +44,9 @@ from qcml.utils.gpu.gputil import *
 from qcml.utils.storage import save_results_to_csv
 from qcml.utils.log import setup_evaluate_model_logging
 
-#multiprocessing.set_start_method("spawn", force=True)
+# multiprocessing.set_start_method("spawn", force=True)
 logger = logging.getLogger(__name__)
+
 
 def log_start_info(classifier_name, combinations, n_jobs):
     logger.info(
@@ -66,7 +67,7 @@ def evaluate_model(
     kernel_func=None,
     kernel_params={},
 ):
-    #logger = setup_evaluate_model_logging(__name__)
+    # logger = setup_evaluate_model_logging(__name__)
     start_time = time.time()
 
     if use_jax:
@@ -147,7 +148,6 @@ def evaluate_transformed_model(
             y_val,
         )
 
-    # Evaluate the model with the given parameters
     accuracy, f1, precision, execution_time, eval_params, model = evaluate_model(
         {k: v for k, v in params.items() if k not in ["kernel_func", "kernel_params"]},
         classifier,

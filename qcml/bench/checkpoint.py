@@ -29,7 +29,9 @@ def save_checkpoint(
     dataset_name,
     results_path="checkpoints/",
 ):
-    checkpoint_file_name = f"qcml-{experiment_name}-{classifier_name}-{dataset_name}-batch{batch_idx}.json"
+    checkpoint_file_name = (
+        f"qcml-{experiment_name}-{classifier_name}-{dataset_name}-batch{batch_idx}.json"
+    )
     checkpoint_file_path = os.path.join(results_path, checkpoint_file_name)
 
     if not os.path.exists(results_path):

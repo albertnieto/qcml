@@ -34,7 +34,9 @@ class CenterKernelLayer(nn.Module):
 
         batch_size, input_dim = x.shape
 
-        centers_idx = jax.random.choice(rng, jnp.arange(x.shape[0]), shape=(batch_size,))
+        centers_idx = jax.random.choice(
+            rng, jnp.arange(x.shape[0]), shape=(batch_size,)
+        )
         centers = x[centers_idx]  # Shape: (batch_size, input_dim)
 
         def compute_kernel(x_i, centers_i):
@@ -44,7 +46,7 @@ class CenterKernelLayer(nn.Module):
 
         return kernel_output
 
-# Define the KernelMappingLayer
+
 class KernelMappingLayer(nn.Module):
     kernel_func: Callable
     kernel_params: Dict
@@ -52,13 +54,12 @@ class KernelMappingLayer(nn.Module):
     def __call__(self, x, w):
         # Calculate kernel value between input x and weight vector w for each sample in the batch
         kernel_output = jax.vmap(
-            lambda x_i: self.kernel_func(x_i, w, **self.kernel_params),
-            in_axes=(0)
+            lambda x_i: self.kernel_func(x_i, w, **self.kernel_params), in_axes=(0)
         )(x)
 
         return kernel_output
 
-# Define the main MLP module
+
 class KernelMLPClassifierModule(nn.Module):
     hidden_layer_sizes: List[Union[int, str]]
     num_classes: int
@@ -72,16 +73,20 @@ class KernelMLPClassifierModule(nn.Module):
             if isinstance(layer_spec, int):
                 layers.append(nn.Dense(features=layer_spec))
             elif isinstance(layer_spec, str):
-                if layer_spec.endswith('k'):
-                    layers.append(CenterKernelLayer(
-                        kernel_func=self.kernel_func,
-                        kernel_params=self.kernel_params
-                    ))
-                elif layer_spec == 'k':
-                    layers.append(KernelMappingLayer(
-                        kernel_func=self.kernel_func,
-                        kernel_params=self.kernel_params
-                    ))
+                if layer_spec.endswith("k"):
+                    layers.append(
+                        CenterKernelLayer(
+                            kernel_func=self.kernel_func,
+                            kernel_params=self.kernel_params,
+                        )
+                    )
+                elif layer_spec == "k":
+                    layers.append(
+                        KernelMappingLayer(
+                            kernel_func=self.kernel_func,
+                            kernel_params=self.kernel_params,
+                        )
+                    )
                 else:
                     raise ValueError(f"Unknown layer specification {layer_spec}")
             else:
@@ -92,13 +97,15 @@ class KernelMLPClassifierModule(nn.Module):
 
     def __call__(self, x, rng=None):
         if rng is None:
-            rng = self.make_rng('params')
+            rng = self.make_rng("params")
 
         for i, layer in enumerate(self.layers):
             if isinstance(layer, CenterKernelLayer):
                 x = layer(x, rng=rng)
             elif isinstance(layer, KernelMappingLayer):
-                w = self.param(f'w_{i}', jax.nn.initializers.lecun_normal(), (x.shape[-1],))
+                w = self.param(
+                    f"w_{i}", jax.nn.initializers.lecun_normal(), (x.shape[-1],)
+                )
                 x = layer(x, w)
             else:
                 x = layer(x)
@@ -106,7 +113,7 @@ class KernelMLPClassifierModule(nn.Module):
 
         return self.output_layer(x)
 
-# Define a pure JAX-based training class
+
 class KernelMLPClassifier:
     def __init__(
         self,
@@ -137,13 +144,14 @@ class KernelMLPClassifier:
             hidden_layer_sizes=self.hidden_layer_sizes,
             num_classes=self.num_classes,
             kernel_func=self.kernel_func,
-            kernel_params=self.kernel_params
+            kernel_params=self.kernel_params,
         )
         params = model.init(rng, jnp.ones(input_shape))["params"]
         tx = optax.adam(self.learning_rate_init)
-        return train_state.TrainState.create(
-            apply_fn=model.apply, params=params, tx=tx
-        ), model
+        return (
+            train_state.TrainState.create(apply_fn=model.apply, params=params, tx=tx),
+            model,
+        )
 
     @staticmethod
     @jax.jit
@@ -178,7 +186,7 @@ class KernelMLPClassifier:
         rng = jax.random.PRNGKey(0)
         state, model = self.create_train_state(rng, input_shape)
 
-        best_loss = float('inf')
+        best_loss = float("inf")
         best_state = None
         no_improvement_epochs = 0
 
@@ -196,22 +204,30 @@ class KernelMLPClassifier:
 
                 if batch_X.shape[0] < self.batch_size:
                     padding_size = self.batch_size - batch_X.shape[0]
-                    batch_X = jnp.pad(batch_X, ((0, padding_size), (0, 0)), mode='constant')
+                    batch_X = jnp.pad(
+                        batch_X, ((0, padding_size), (0, 0)), mode="constant"
+                    )
                     if self.one_hot_encode:
-                        batch_y = jnp.pad(batch_y, ((0, padding_size), (0, 0)), mode='constant')
+                        batch_y = jnp.pad(
+                            batch_y, ((0, padding_size), (0, 0)), mode="constant"
+                        )
                     else:
-                        batch_y = jnp.pad(batch_y, ((0, padding_size),), mode='constant')
+                        batch_y = jnp.pad(
+                            batch_y, ((0, padding_size),), mode="constant"
+                        )
 
                 batch = {"x": batch_X, "y": batch_y}
                 rng, batch_rng = jax.random.split(rng)
                 state, loss_value = self.train_step(state, batch, batch_rng)
                 epoch_loss += loss_value
 
-            epoch_loss /= (len(X_train) // self.batch_size)
+            epoch_loss /= len(X_train) // self.batch_size
             epoch_time = time.time() - start_time
 
             val_loss = self.evaluate(state, model, X_val, y_val)
-            print(f"Epoch {epoch}: Train Loss = {epoch_loss:.4f}, Val Loss = {val_loss:.4f}, Time = {epoch_time:.2f}s")
+            print(
+                f"Epoch {epoch}: Train Loss = {epoch_loss:.4f}, Val Loss = {val_loss:.4f}, Time = {epoch_time:.2f}s"
+            )
 
             if val_loss < best_loss:
                 best_loss = val_loss
@@ -238,11 +254,13 @@ class KernelMLPClassifier:
 
             if batch_X.shape[0] < self.batch_size:
                 padding_size = self.batch_size - batch_X.shape[0]
-                batch_X = jnp.pad(batch_X, ((0, padding_size), (0, 0)), mode='constant')
+                batch_X = jnp.pad(batch_X, ((0, padding_size), (0, 0)), mode="constant")
                 if self.one_hot_encode:
-                    batch_y = jnp.pad(batch_y, ((0, padding_size), (0, 0)), mode='constant')
+                    batch_y = jnp.pad(
+                        batch_y, ((0, padding_size), (0, 0)), mode="constant"
+                    )
                 else:
-                    batch_y = jnp.pad(batch_y, ((0, padding_size),), mode='constant')
+                    batch_y = jnp.pad(batch_y, ((0, padding_size),), mode="constant")
 
             batch = {"x": batch_X, "y": batch_y}
             rng = jax.random.PRNGKey(1)
@@ -256,38 +274,45 @@ class KernelMLPClassifier:
     def predict(self, X):
         num_samples = X.shape[0]  # Total number of samples in X
         logits_list = []
-    
+
         print(f"Number of samples: {num_samples}")
         print(f"Batch size: {self.batch_size}")
-    
+
         for i in range(0, num_samples, self.batch_size):
-            batch_X = X[i:i + self.batch_size]
+            batch_X = X[i : i + self.batch_size]
             actual_batch_size = batch_X.shape[0]
-    
-            print(f"Processing batch from {i} to {i + actual_batch_size} (actual batch size: {actual_batch_size})")
-    
+
+            print(
+                f"Processing batch from {i} to {i + actual_batch_size} (actual batch size: {actual_batch_size})"
+            )
+
             if actual_batch_size < self.batch_size:
                 # Pad the batch to the expected size if it's smaller than the batch size
                 padding_size = self.batch_size - actual_batch_size
-                batch_X = jnp.pad(batch_X, ((0, padding_size), (0, 0)), mode='constant')
+                batch_X = jnp.pad(batch_X, ((0, padding_size), (0, 0)), mode="constant")
                 print(f"Padded batch size to {batch_X.shape}")
-    
+
             # Predict logits for the batch
             rng = jax.random.PRNGKey(2)
-            batch_logits = self.model.apply({"params": self.state.params}, batch_X, rng=rng)
-    
-            # Debugging: Print the shape of batch_logits
+            batch_logits = self.model.apply(
+                {"params": self.state.params}, batch_X, rng=rng
+            )
+
             print(f"batch_logits shape: {batch_logits.shape}")
-    
+
             # Only keep the logits corresponding to the actual batch size (ignore padded parts)
             logits_list.extend(batch_logits[:actual_batch_size])
-    
+
         # Concatenate all logits into a single array
-        logits = jnp.array(logits_list)  # Use jnp.array to convert the list of arrays into a single array
+        logits = jnp.array(
+            logits_list
+        )  # Use jnp.array to convert the list of arrays into a single array
         print(f"Total logits shape after concatenation: {logits.shape}")
-    
+
         # Ensure we have the correct number of predictions
         if logits.shape[0] != num_samples:
-            raise ValueError(f"Expected {num_samples} predictions, but got {logits.shape[0]}")
-    
+            raise ValueError(
+                f"Expected {num_samples} predictions, but got {logits.shape[0]}"
+            )
+
         return jnp.argmax(logits, axis=1)

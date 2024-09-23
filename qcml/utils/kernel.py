@@ -61,7 +61,9 @@ def kernel_transform(
         X_train = scaler.fit_transform(X_train)
         X_val = scaler.transform(X_val)
 
-    logger.debug(f"Transforming data with kernel: {kernel_func.__name__}, parameters: {kernel_params}, and scaling with: {scale_data}")
+    logger.debug(
+        f"Transforming data with kernel: {kernel_func.__name__}, parameters: {kernel_params}, and scaling with: {scale_data}"
+    )
     # Choose random centers from X_train
     rng = np.random.default_rng()
     indices = rng.choice(X_train.shape[0], size=n_centers, replace=False)
@@ -80,8 +82,11 @@ def kernel_transform(
     X_val_transformed = compute_gram_matrix(
         X_val, centers, kernel_func, **kernel_params
     )
-    logger.debug(f"Transformation done: {kernel_func.__name__}, parameters: {kernel_params}, and scaling with: {scale_data}")
+    logger.debug(
+        f"Transformation done: {kernel_func.__name__}, parameters: {kernel_params}, and scaling with: {scale_data}"
+    )
     return X_train_transformed, X_val_transformed, y_train, y_val
+
 
 def jitted_gram_matrix_batched(X1, X2, kernel_func, batch_size=100, **kernel_params):
     start_time = time.time()
@@ -94,7 +99,9 @@ def jitted_gram_matrix_batched(X1, X2, kernel_func, batch_size=100, **kernel_par
         return kernel_func(x1, x2, **kernel_params)
 
     # Use vmap without JIT
-    kernel_func_vmap = jax.vmap(jax.vmap(wrapped_kernel_func, in_axes=(None, 0)), in_axes=(0, None))
+    kernel_func_vmap = jax.vmap(
+        jax.vmap(wrapped_kernel_func, in_axes=(None, 0)), in_axes=(0, None)
+    )
 
     device_info = jax.devices()[0]
 
@@ -113,8 +120,12 @@ def jitted_gram_matrix_batched(X1, X2, kernel_func, batch_size=100, **kernel_par
 
             # Compute the kernel in a batched manner
             batch_result = kernel_func_vmap(X1_batch, X2_batch)
-            jax.block_until_ready(batch_result)  # Ensures computation is done and memory is cleared
-            Gram_matrix = Gram_matrix.at[i : i + batch_size, j : j + batch_size].set(batch_result)
+            jax.block_until_ready(
+                batch_result
+            )  # Ensures computation is done and memory is cleared
+            Gram_matrix = Gram_matrix.at[i : i + batch_size, j : j + batch_size].set(
+                batch_result
+            )
 
     execution_time = time.time() - start_time
 
@@ -124,7 +135,6 @@ def jitted_gram_matrix_batched(X1, X2, kernel_func, batch_size=100, **kernel_par
     )
 
     return Gram_matrix
-
 
 
 def jitted_gram_matrix(X1, X2, kernel_func, **kernel_params):
@@ -199,11 +209,17 @@ def batched_gram_matrix(X1, X2, kernel_func, batch_size=100, **kernel_params):
         X1_batch = X1[i : i + batch_size]
         for j in range(0, n_samples_X2, batch_size):
             X2_batch = X2[j : j + batch_size]
-            
+
             # Vectorizing the kernel function application over batches
-            batch_result = vmap(lambda x1: vmap(lambda x2: kernel_func(x1, x2, **kernel_params))(X2_batch))(X1_batch)
-            
-            Gram_matrix = Gram_matrix.at[i : i + batch_size, j : j + batch_size].set(batch_result)
+            batch_result = vmap(
+                lambda x1: vmap(lambda x2: kernel_func(x1, x2, **kernel_params))(
+                    X2_batch
+                )
+            )(X1_batch)
+
+            Gram_matrix = Gram_matrix.at[i : i + batch_size, j : j + batch_size].set(
+                batch_result
+            )
 
     return Gram_matrix
 
@@ -219,7 +235,7 @@ def compute_gram_matrix(X1, X2, kernel_func, **kernel_params):
         f"kernel_params: {kernel_params}, input sizes: {X1.shape}, {X2.shape}, "
         f"output size: {Gram_matrix.shape}"
     )
-    
+
     return Gram_matrix
 
 
@@ -229,13 +245,15 @@ def gram_matrix(X1, X2, kernel_func, **kernel_params):
     # Expand the dimensions to perform broadcasting over the entire matrix
     X1_expanded = X1[:, None, :]  # Shape: (n_samples_X1, 1, features)
     X2_expanded = X2[None, :, :]  # Shape: (1, n_samples_X2, features)
-    
+
     # Apply the kernel function to the expanded arrays, leveraging broadcasting
     Gram_matrix = jax.vmap(
         lambda x1: jax.vmap(lambda x2: kernel_func(x1, x2, **kernel_params))(X2)
     )(X1)
 
-    jax.block_until_ready(Gram_matrix)  # Ensures the computation is done before measuring time
+    jax.block_until_ready(
+        Gram_matrix
+    )  # Ensures the computation is done before measuring time
     execution_time = time.time() - start_time
     logger.debug(f"Execution time for Gram matrix computation: {execution_time:.4f}s")
 

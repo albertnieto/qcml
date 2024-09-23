@@ -75,7 +75,9 @@ def jax_setup(
             logger.info(f"CUDA_VISIBLE_DEVICES set to {gpu_index}.")
 
             # Set JAX_CHECK_TRACER_LEAKS based on parameter
-            os.environ["JAX_CHECK_TRACER_LEAKS"] = "true" if check_tracer_leaks else "false"
+            os.environ["JAX_CHECK_TRACER_LEAKS"] = (
+                "true" if check_tracer_leaks else "false"
+            )
             logger.info(
                 f"JAX_CHECK_TRACER_LEAKS set to {'true' if check_tracer_leaks else 'false'}."
             )
