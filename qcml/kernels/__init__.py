@@ -13,17 +13,15 @@
 # limitations under the License.
 
 
-from .classical_kernels import (
-    sigmoid_kernel,
-    laplacian_kernel,
-    anova_kernel,
-    chi_squared_kernel,
-    histogram_intersection_kernel,
-    linear_kernel,
-    polynomial_kernel,
-    gaussian_kernel,
-    rbf_kernel,
-)
+from .classical.rbf_kernel import rbf_kernel
+from .classical.sigmoid_kernel import sigmoid_kernel
+from .classical.laplacian_kernel import laplacian_kernel
+from .classical.anova_kernel import anova_kernel
+from .classical.chi_squared_kernel import chi_squared_kernel
+from .classical.histogram_intersection_kernel import histogram_intersection_kernel
+from .classical.linear_kernel import linear_kernel
+from .classical.polynomial_kernel import polynomial_kernel
+from .classical.gaussian_kernel import gaussian_kernel
 from .quantum_kernels import (
     separable_kernel,
     projected_quantum_kernel,
