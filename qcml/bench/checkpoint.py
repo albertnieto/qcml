@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# File: qic/bench/checkpoint.py
-
 import os
 import json
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 def save_checkpoint(
     results,
@@ -29,26 +26,37 @@ def save_checkpoint(
     dataset_name,
     results_path="checkpoints/",
 ):
+    # Handle classifier_name being either a string or a list
+    if isinstance(classifier_name, list):
+        classifier_name_str = "+".join([clf.__name__ for clf in classifier_name])
+    else:
+        classifier_name_str = classifier_name
+
     checkpoint_file_name = (
-        f"qcml-{experiment_name}-{classifier_name}-{dataset_name}-batch{batch_idx}.json"
+        f"qcml-{experiment_name}-{classifier_name_str}-{dataset_name}-batch{batch_idx}.json"
     )
     checkpoint_file_path = os.path.join(results_path, checkpoint_file_name)
 
-    if not os.path.exists(results_path):
-        os.makedirs(results_path)
+    # Ensure the results_path directory exists
+    os.makedirs(results_path, exist_ok=True)
 
     checkpoint_data = {"results": results, "batch_idx": batch_idx}
 
-    with open(checkpoint_file_path, "w") as f:
-        json.dump(checkpoint_data, f)
-
-    logger.info(f"Checkpoint saved to {checkpoint_file_path}")
-
+    try:
+        with open(checkpoint_file_path, "w") as f:
+            json.dump(checkpoint_data, f)
+        logger.info(f"Checkpoint saved to {checkpoint_file_path}")
+    except IOError as e:
+        logger.error(f"Failed to save checkpoint: {e}")
 
 def load_checkpoint(
     classifier_name, experiment_name, dataset_name, results_path="checkpoints/"
 ):
-    classifier_name_str = "+".join([clf.__name__ for clf in classifier_name])
+    if isinstance(classifier_name, list):
+        classifier_name_str = "+".join([clf.__name__ for clf in classifier_name])
+    else:
+        classifier_name_str = classifier_name
+
     checkpoint_file_name = (
         f"qcml-{experiment_name}-{classifier_name_str}-{dataset_name}.json"
     )
@@ -58,39 +66,55 @@ def load_checkpoint(
         logger.info("No checkpoint found for this classifier, dataset, and experiment.")
         return None
 
-    with open(checkpoint_file_path, "r") as f:
-        checkpoint_data = json.load(f)
-
-    logger.info(f"Checkpoint loaded from {checkpoint_file_path}")
-    return checkpoint_data
-
+    try:
+        with open(checkpoint_file_path, "r") as f:
+            checkpoint_data = json.load(f)
+        logger.info(f"Checkpoint loaded from {checkpoint_file_path}")
+        return checkpoint_data
+    except IOError as e:
+        logger.error(f"Failed to load checkpoint: {e}")
+        return None
 
 def delete_checkpoints(
     classifier_name, experiment_name, dataset_name, results_path="checkpoints/"
 ):
-    classifier_name_str = "+".join([clf.__name__ for clf in classifier_name])
+    if isinstance(classifier_name, list):
+        classifier_name_str = "+".join([clf.__name__ for clf in classifier_name])
+    else:
+        classifier_name_str = classifier_name
+
     checkpoint_file_name = (
         f"qcml-{experiment_name}-{classifier_name_str}-{dataset_name}.json"
     )
     checkpoint_file_path = os.path.join(results_path, checkpoint_file_name)
     if os.path.exists(checkpoint_file_path):
-        os.remove(checkpoint_file_path)
-        logger.info(
-            f"Checkpoint {checkpoint_file_path} deleted after successful completion of the experiment."
-        )
+        try:
+            os.remove(checkpoint_file_path)
+            logger.info(
+                f"Checkpoint {checkpoint_file_path} deleted after successful completion of the experiment."
+            )
+        except OSError as e:
+            logger.error(f"Failed to delete checkpoint: {e}")
     else:
         logger.info(
             f"No checkpoint found to delete for {classifier_name_str} on {dataset_name}."
         )
 
-
 def get_highest_batch_checkpoint(
     classifier_name, experiment_name, dataset_name, results_path="checkpoints/"
 ):
-    classifier_name_str = "+".join([clf.__name__ for clf in classifier_name])
+    if isinstance(classifier_name, list):
+        classifier_name_str = "+".join([clf.__name__ for clf in classifier_name])
+    else:
+        classifier_name_str = classifier_name
+
     checkpoint_file_pattern = (
         f"qcml-{experiment_name}-{classifier_name_str}-{dataset_name}-batch"
     )
+
+    if not os.path.exists(results_path):
+        logger.debug(f"No checkpoints directory found at {results_path}.")
+        return None, None
 
     # List all files in the checkpoints directory that match the pattern
     checkpoint_files = [
@@ -120,11 +144,15 @@ def get_highest_batch_checkpoint(
 
     if latest_checkpoint_file:
         checkpoint_file_path = os.path.join(results_path, latest_checkpoint_file)
-        with open(checkpoint_file_path, "r") as f:
-            checkpoint_data = json.load(f)
-        logger.debug(
-            f"Checkpoint found: {latest_checkpoint_file} with batch {highest_batch}."
-        )
-        return checkpoint_data, highest_batch
+        try:
+            with open(checkpoint_file_path, "r") as f:
+                checkpoint_data = json.load(f)
+            logger.debug(
+                f"Checkpoint found: {latest_checkpoint_file} with batch {highest_batch}."
+            )
+            return checkpoint_data, highest_batch
+        except IOError as e:
+            logger.error(f"Failed to load checkpoint: {e}")
+            return None, None
 
     return None, None

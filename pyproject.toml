@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qcml"
-version = "0.1.2"
+version = "0.1.2.1"
 description = "A benchmarking library for quantum and classical machine learning, with specialized support for evaluating kernel methods."
 readme = "README.md"
 authors = [

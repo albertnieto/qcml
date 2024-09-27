@@ -13,6 +13,14 @@
 # limitations under the License.
 
 from .grid_search import GridSearch
+from .model_evaluator import ModelEvaluator
+from .parameter_grid import ParameterGrid
+from .checkpoint import (
+    save_checkpoint,
+    load_checkpoint,
+    delete_checkpoints,
+    get_highest_batch_checkpoint,
+)
 from .grids.kernel_grid import (
     classical_kernel_grid,
     classical_kernel_param_map,
@@ -26,7 +34,13 @@ from .grids.kernel_grid import (
 from .grids.transformation_grid import get_kernel_transform
 
 __all__ = [
-    "grid_search",
+    "GridSearch",
+    "ModelEvaluator",
+    "ParameterGrid",
+    "save_checkpoint",
+    "load_checkpoint",
+    "delete_checkpoints",
+    "get_highest_batch_checkpoint",
     "classical_kernel_grid",
     "classical_kernel_param_map",
     "quantum_kernel_grid",

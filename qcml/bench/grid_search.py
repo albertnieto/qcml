@@ -31,7 +31,7 @@ class GridSearch:
     def __init__(
         self,
         classifiers: List[Callable],
-        param_grid: Dict[str, List[Any]],
+        param_grid: Optional[Dict[str, List[Any]]] = None,
         combinations: Optional[
             List[Tuple[Dict[str, Any], Callable, Dict[str, Any]]]
         ] = None,
@@ -66,12 +66,17 @@ class GridSearch:
         # Initialize ModelEvaluator
         self.evaluator = ModelEvaluator(use_jax=self.use_jax)
 
+        # Validate input parameters
+        if self.combinations is None and self.param_grid is None:
+            raise ValueError("Either 'param_grid' or 'combinations' must be provided.")
+
         # Initialize ParameterGrid if combinations are not provided
         if self.combinations is None:
             self.param_grid_obj = ParameterGrid(
                 self.param_grid, self.transformations, self.transformation_params
             )
             self.combinations = self.param_grid_obj.combinations
+
 
     def run(
         self,
