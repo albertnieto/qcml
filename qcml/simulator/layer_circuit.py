@@ -17,6 +17,7 @@ from typing import List, Dict, Any, Optional
 from . import backend as bk
 from .layers import QuantumGateLayer
 
+
 class LayerBasedCircuit:
     def __init__(self, num_qubits: int):
         self.num_qubits = num_qubits

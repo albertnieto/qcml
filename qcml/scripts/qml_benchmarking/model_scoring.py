@@ -32,7 +32,7 @@ from qcml.utils.hyperparam_search import (
     construct_hyperparameter_grid,
     csv_to_dict,
 )
-from qcml.bench.hyperparameter_settings import hyper_parameter_settings
+from qcml.bench.qml_benchmarking.hyperparameter_settings import hyper_parameter_settings
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.pipeline import Pipeline
 

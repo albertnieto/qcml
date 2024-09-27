@@ -16,15 +16,23 @@
 
 import networkx as nx
 
+
 class GraphCircuit:
     def __init__(self, num_qubits: int):
         self.num_qubits = num_qubits
         self.graph = nx.DiGraph()
         self.node_counter = 0  # To assign unique IDs to nodes
 
-    def add_gate(self, gate_name: str, targets: List[int], params: Optional[Dict[str, Any]] = None):
+    def add_gate(
+        self,
+        gate_name: str,
+        targets: List[int],
+        params: Optional[Dict[str, Any]] = None,
+    ):
         node_id = self.node_counter
-        self.graph.add_node(node_id, gate_name=gate_name, targets=targets, params=params)
+        self.graph.add_node(
+            node_id, gate_name=gate_name, targets=targets, params=params
+        )
         if node_id > 0:
             self.graph.add_edge(node_id - 1, node_id)
         self.node_counter += 1

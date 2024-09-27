@@ -16,6 +16,7 @@ from .jax.laplacian_kernel import laplacian_kernel as laplacian_kernel_jax
 from .numpy.laplacian_kernel import laplacian_kernel as laplacian_kernel_numpy
 from .torch.laplacian_kernel import laplacian_kernel as laplacian_kernel_torch
 
+
 def laplacian_kernel(x1, x2, backend="numpy", gamma=1):
     """
     Compute the Laplacian kernel between two vectors.

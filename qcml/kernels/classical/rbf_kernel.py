@@ -18,6 +18,7 @@ from .jax.rbf_kernel import rbf_kernel as rbf_kernel_jax
 from .numpy.rbf_kernel import rbf_kernel as rbf_kernel_numpy
 from .torch.rbf_kernel import rbf_kernel as rbf_kernel_torch
 
+
 def rbf_kernel(x1, x2, backend="numpy", gamma=None):
     """
     Compute the Radial Basis Function (RBF) kernel between two vectors.

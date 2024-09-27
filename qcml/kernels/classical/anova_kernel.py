@@ -16,6 +16,7 @@ from .jax.anova_kernel import anova_kernel as anova_kernel_jax
 from .numpy.anova_kernel import anova_kernel as anova_kernel_numpy
 from .torch.anova_kernel import anova_kernel as anova_kernel_torch
 
+
 def anova_kernel(x1, x2, backend="numpy", d=2, sigma=1):
     """
     Compute the ANOVA kernel between two vectors.

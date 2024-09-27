@@ -17,6 +17,7 @@
 from . import backend as bk
 from . import gates
 
+
 def x_gate(state, target, num_qubits):
     # Expand gate
     gate_matrix = gates.X_gate()
@@ -24,11 +25,13 @@ def x_gate(state, target, num_qubits):
     state = bk.dot(full_gate, state)
     return state
 
+
 def rx_gate(state, target, theta, num_qubits):
     gate_matrix = gates.RX_gate(theta)
     full_gate = _expand_single_qubit_gate(gate_matrix, target, num_qubits)
     state = bk.dot(full_gate, state)
     return state
+
 
 def _expand_single_qubit_gate(gate_matrix, target_qubit, num_qubits):
     operators = [gates.identity_gate()] * num_qubits

@@ -17,9 +17,11 @@ from qcml.simulator.simulator import QuantumSimulator
 from qcml.simulator.circuit import QuantumCircuit
 from qcml.simulator.backend import set_backend
 
+
 @pytest.fixture(autouse=True)
 def setup_backend():
-    set_backend('jax')
+    set_backend("jax")
+
 
 def test_init_simulator():
     sim = QuantumSimulator(2)
@@ -27,14 +29,16 @@ def test_init_simulator():
     assert sim.state.shape == (4,)
     assert sim.state[0] == 1.0 + 0.0j
 
-#def test_apply_gate():
+
+# def test_apply_gate():
 #    sim = QuantumSimulator(2)
 #    qc = QuantumCircuit(2)
 #    qc.x(0)
 #    sim.run(qc)
-    
-    # Use .item() to extract the scalar value regardless of backend (JAX or PyTorch)
+
+# Use .item() to extract the scalar value regardless of backend (JAX or PyTorch)
 #    assert abs(sim.state[1].item()) != 0.0
+
 
 def test_measure_all():
     sim = QuantumSimulator(2)

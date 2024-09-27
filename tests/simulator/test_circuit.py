@@ -14,10 +14,12 @@
 
 from qcml.simulator.circuit import QuantumCircuit
 
+
 def test_create_circuit():
     qc = QuantumCircuit(num_qubits=3)
     assert qc.num_qubits == 3
     assert qc.gates == []
+
 
 def test_add_gate():
     qc = QuantumCircuit(num_qubits=3)
@@ -25,6 +27,7 @@ def test_add_gate():
     assert qc.gates == [{"name": "X", "targets": [0]}]
     qc.h(1)
     assert qc.gates[-1] == {"name": "H", "targets": [1]}
+
 
 def test_custom_gate():
     qc = QuantumCircuit(num_qubits=2)

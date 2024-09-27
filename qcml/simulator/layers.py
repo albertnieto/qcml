@@ -19,10 +19,12 @@ from typing import Any
 from . import backend as bk
 from . import gates
 
+
 class QuantumGateLayer(ABC):
     @abstractmethod
     def forward(self, state: Any) -> Any:
         pass
+
 
 class XLayer(QuantumGateLayer):
     def __init__(self, target: int, num_qubits: int):
@@ -46,7 +48,9 @@ class XLayer(QuantumGateLayer):
             full_gate = bk.kron(full_gate, op)
         return full_gate
 
+
 # Similarly define other layers like YLayer, ZLayer, HLayer, etc.
+
 
 # For parameterized gates like RX
 class RXLayer(QuantumGateLayer):
@@ -70,6 +74,7 @@ class RXLayer(QuantumGateLayer):
             full_gate = bk.kron(full_gate, op)
         return full_gate
 
+
 # For two-qubit gates like CNOT
 class CNOTLayer(QuantumGateLayer):
     def __init__(self, control: int, target: int, num_qubits: int):
@@ -79,7 +84,9 @@ class CNOTLayer(QuantumGateLayer):
         self.gate_matrix = gates.CNOT_gate()
 
     def forward(self, state):
-        full_gate = self._expand_two_qubit_gate(self.gate_matrix, self.control, self.target)
+        full_gate = self._expand_two_qubit_gate(
+            self.gate_matrix, self.control, self.target
+        )
         state = bk.dot(full_gate, state)
         return state
 

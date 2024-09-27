@@ -31,5 +31,5 @@ __all__ = [
     "linear_kernel",
     "polynomial_kernel",
     "rbf_kernel",
-    "sigmoid_kernel"
+    "sigmoid_kernel",
 ]

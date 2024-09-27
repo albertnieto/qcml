@@ -16,6 +16,7 @@ from .jax.polynomial_kernel import polynomial_kernel as polynomial_kernel_jax
 from .numpy.polynomial_kernel import polynomial_kernel as polynomial_kernel_numpy
 from .torch.polynomial_kernel import polynomial_kernel as polynomial_kernel_torch
 
+
 def polynomial_kernel(x1, x2, backend="numpy", degree=3, coef0=1):
     """
     Compute the polynomial kernel between two vectors.

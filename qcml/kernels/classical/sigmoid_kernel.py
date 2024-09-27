@@ -16,6 +16,7 @@ from .jax.sigmoid_kernel import sigmoid_kernel as sigmoid_kernel_jax
 from .numpy.sigmoid_kernel import sigmoid_kernel as sigmoid_kernel_numpy
 from .torch.sigmoid_kernel import sigmoid_kernel as sigmoid_kernel_torch
 
+
 def sigmoid_kernel(x1, x2, backend="numpy", alpha=1, c=0):
     """
     Compute the sigmoid kernel between two vectors.

@@ -14,6 +14,7 @@
 
 import jax.numpy as jnp
 
+
 def rbf_kernel(x1, x2, gamma=None):
     """
     Compute the RBF kernel using JAX.

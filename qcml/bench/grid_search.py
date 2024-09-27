@@ -26,12 +26,15 @@ from qcml.data import get_dataset
 
 logger = logging.getLogger(__name__)
 
+
 class GridSearch:
     def __init__(
         self,
         classifiers: List[Callable],
         param_grid: Dict[str, List[Any]],
-        combinations: Optional[List[Tuple[Dict[str, Any], Callable, Dict[str, Any]]]] = None,
+        combinations: Optional[
+            List[Tuple[Dict[str, Any], Callable, Dict[str, Any]]]
+        ] = None,
         results_path: str = "results/grid_search/",
         batch_size: int = 32,
         n_jobs: int = -1,
@@ -119,7 +122,8 @@ class GridSearch:
             dataset_params = dataset.get("parameters", {})
             experiment_suffix = (
                 "_" + "_".join(str(v) for v in dataset_params.values())
-                if dataset_params else ""
+                if dataset_params
+                else ""
             )
             experiment_full_name = f"{dataset_name}{experiment_suffix}"
             logger.info(
@@ -180,7 +184,7 @@ class GridSearch:
         X_val,
         y_val,
     ):
-        best_score = -float('inf')
+        best_score = -float("inf")
         best_params = None
         best_model = None
         self.results = []
@@ -231,9 +235,7 @@ class GridSearch:
                     raise e
 
             if self.log_level == "batch" and (idx + 1) % self.batch_size == 0:
-                logger.info(
-                    f"Processed {idx + 1}/{total_combinations} combinations."
-                )
+                logger.info(f"Processed {idx + 1}/{total_combinations} combinations.")
 
         return best_score, best_params, best_model
 

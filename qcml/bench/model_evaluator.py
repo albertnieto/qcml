@@ -18,6 +18,7 @@ import time
 from typing import Optional, Callable, Dict, Any
 from sklearn.metrics import accuracy_score, f1_score, precision_score
 
+
 class ModelEvaluator:
     def __init__(self, use_jax: bool = False):
         self.use_jax = use_jax
@@ -48,7 +49,9 @@ class ModelEvaluator:
 
         accuracy = accuracy_score(y_val, predictions)
         f1 = f1_score(y_val, predictions, average="weighted", zero_division=0)
-        precision = precision_score(y_val, predictions, average="weighted", zero_division=0)
+        precision = precision_score(
+            y_val, predictions, average="weighted", zero_division=0
+        )
 
         execution_time = time.time() - start_time
 

@@ -1,3 +1,17 @@
+# Copyright 2024 Albert Nieto
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import time
 from typing import Optional, Callable
 
@@ -12,7 +26,7 @@ class Timer:
         time_unit (str): The unit of time to use ('seconds', 'milliseconds', 'minutes').
         log_fn (Callable[[str], None]): Optional logging function to log the execution time.
         msg (str): Optional custom message to display or log the execution time.
-    
+
     Methods:
         __enter__(): Starts the timer when entering the context.
         __exit__(*args): Stops the timer and stores the execution time.
@@ -24,10 +38,15 @@ class Timer:
         __repr__(): Returns a detailed string with the execution time and attributes.
     """
 
-    def __init__(self, time_unit: str = "seconds", log_fn: Optional[Callable[[str], None]] = None, msg: str = ""):
+    def __init__(
+        self,
+        time_unit: str = "seconds",
+        log_fn: Optional[Callable[[str], None]] = None,
+        msg: str = "",
+    ):
         """
         Initializes the Timer class with optional parameters.
-        
+
         Args:
             time_unit (str): The unit of time for the execution time ('seconds', 'milliseconds', 'minutes').
             log_fn (Callable[[str], None]): Optional function to log the execution time instead of printing it.
@@ -66,17 +85,17 @@ class Timer:
         """Print the recorded execution time after the timer has finished."""
         if self.execution_time is None:
             raise ValueError("Timer has not finished or hasn't been started.")
-        
+
         print(self.__str__())
 
     def log(self):
         """Log the recorded execution time using the provided log function."""
         if self.execution_time is None:
             raise ValueError("Timer has not finished or hasn't been started.")
-        
+
         if not self.log_fn:
             raise ValueError("No logging function provided.")
-        
+
         self.log_fn(self.__str__())
 
     def reset(self):
@@ -88,11 +107,12 @@ class Timer:
         """Return a formatted string of the execution time."""
         if self.execution_time is None:
             return "Timer has not been started or has not finished."
-        
+
         return f"{self.msg}Execution time: {self.execution_time:.4f} {self.time_unit}"
 
     def __repr__(self):
         """Return a detailed string representation of the Timer object."""
-        return (f"Timer(time_unit={self.time_unit}, "
-                f"execution_time={self.execution_time}, msg='{self.msg}')")
-
+        return (
+            f"Timer(time_unit={self.time_unit}, "
+            f"execution_time={self.execution_time}, msg='{self.msg}')"
+        )

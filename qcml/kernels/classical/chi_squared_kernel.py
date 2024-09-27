@@ -16,6 +16,7 @@ from .jax.chi_squared_kernel import chi_squared_kernel as chi_squared_kernel_jax
 from .numpy.chi_squared_kernel import chi_squared_kernel as chi_squared_kernel_numpy
 from .torch.chi_squared_kernel import chi_squared_kernel as chi_squared_kernel_torch
 
+
 def chi_squared_kernel(x1, x2, backend="numpy"):
     """
     Compute the Chi-Squared kernel between two vectors.

@@ -17,6 +17,7 @@
 import itertools
 from typing import Optional, List, Callable, Dict, Any, Tuple
 
+
 class ParameterGrid:
     def __init__(
         self,
@@ -29,7 +30,9 @@ class ParameterGrid:
         self.transformation_params = transformation_params or []
         self.combinations = self._create_param_combinations()
 
-    def _create_param_combinations(self) -> List[Tuple[Dict[str, Any], Optional[Callable], Dict[str, Any]]]:
+    def _create_param_combinations(
+        self,
+    ) -> List[Tuple[Dict[str, Any], Optional[Callable], Dict[str, Any]]]:
         # Generate parameter combinations
         param_names = list(self.param_grid.keys())
         param_values = list(self.param_grid.values())
@@ -50,7 +53,9 @@ class ParameterGrid:
 
         return full_combinations
 
-    def _generate_transformation_combinations(self) -> List[Tuple[Optional[Callable], Dict[str, Any]]]:
+    def _generate_transformation_combinations(
+        self,
+    ) -> List[Tuple[Optional[Callable], Dict[str, Any]]]:
         if not self.transformations or not self.transformation_params:
             return [(None, {})]
         transformation_combinations = []

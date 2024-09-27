@@ -70,6 +70,6 @@ def set_backend(backend_name: str):
     global _backend
     _backend = backend_name
     os.environ["SIMULATOR_BACKEND"] = _backend
-    
+
     # Re-import the current module to refresh backend
     importlib.reload(sys.modules[__name__])

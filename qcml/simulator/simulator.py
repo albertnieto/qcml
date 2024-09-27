@@ -31,7 +31,6 @@ class QuantumSimulator:
             self.state[0] = 1.0 + 0.0j  # PyTorch equivalent
         self.global_key = bk.PRNGKey(42) if bk.backend_name == "jax" else None
 
-
     def _expand_single_qubit_gate(self, gate_matrix, target_qubit):
         # Create identity operators for other qubits
         operators = [gates.identity_gate()] * self.num_qubits

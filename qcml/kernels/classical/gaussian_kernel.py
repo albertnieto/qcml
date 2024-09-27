@@ -16,6 +16,7 @@ from .jax.gaussian_kernel import gaussian_kernel as gaussian_kernel_jax
 from .numpy.gaussian_kernel import gaussian_kernel as gaussian_kernel_numpy
 from .torch.gaussian_kernel import gaussian_kernel as gaussian_kernel_torch
 
+
 def gaussian_kernel(x1, x2, backend="numpy", gamma=1):
     """
     Compute the Gaussian kernel between two vectors.

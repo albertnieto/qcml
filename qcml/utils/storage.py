@@ -27,6 +27,10 @@ def save_results_to_csv(
     if not os.path.exists(results_path):
         os.makedirs(results_path)
 
+    if not results:
+        logger.warning("No results to save.")
+        return
+
     csv_file_name = f"{classifier_name}-{experiment_name}_best-hypa.csv"
     csv_file_path = os.path.join(results_path, csv_file_name)
 
