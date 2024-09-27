@@ -25,8 +25,12 @@ class QuantumSimulator:
     def __init__(self, num_qubits: int):
         self.num_qubits = num_qubits
         self.state = bk.zeros((2**num_qubits,), dtype=bk.complex64)
-        self.state = self.state.at[0].set(1.0 + 0.0j)  # Initialize to |0...0>
+        if bk.backend_name == "jax":
+            self.state = self.state.at[0].set(1.0 + 0.0j)  # Initialize to |0...0>
+        else:
+            self.state[0] = 1.0 + 0.0j  # PyTorch equivalent
         self.global_key = bk.PRNGKey(42) if bk.backend_name == "jax" else None
+
 
     def _expand_single_qubit_gate(self, gate_matrix, target_qubit):
         # Create identity operators for other qubits
@@ -62,7 +66,6 @@ class QuantumSimulator:
         full_gate = gate_0_full + gate_1_full
         return full_gate
 
-    @bk.jit
     def _apply_gate(self, gate_info: Dict[str, Any]):
         name = gate_info["name"]
         targets = gate_info["targets"]
@@ -77,16 +80,19 @@ class QuantumSimulator:
         if len(targets) == 1:
             # Single-qubit gate
             full_gate = self._expand_single_qubit_gate(gate_matrix, targets[0])
-            self.state = bk.dot(full_gate, self.state)
         elif len(targets) == 2:
             # Two-qubit gate
             full_gate = self._expand_two_qubit_gate(gate_matrix, targets[0], targets[1])
-            self.state = bk.dot(full_gate, self.state)
         else:
             raise ValueError("Only single and two-qubit gates are supported.")
 
+        # Only JIT-compile the dot product operation, which is numerical
+        self.state = bk.jit(bk.dot)(full_gate, self.state)
+
     def run(self, circuit):
-        for gate_info in circuit.gates:
+        # Retrieve the gate sequence from the circuit
+        gate_sequence = circuit.get_gate_sequence()
+        for gate_info in gate_sequence:
             self._apply_gate(gate_info)
 
     def measure_all(self, num_shots=1):

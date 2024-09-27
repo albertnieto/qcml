@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import itertools
-from qcml.kernels.jax import (
+from qcml.kernels.classical.jax import (
     sigmoid_kernel,
     laplacian_kernel,
     anova_kernel,

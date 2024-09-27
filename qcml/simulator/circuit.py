@@ -66,3 +66,6 @@ class QuantumCircuit:
         self, name: str, targets: List[int], params: Optional[Dict[str, Any]] = None
     ):
         self.gates.append({"name": name, "targets": targets, "params": params})
+
+    def get_gate_sequence(self) -> List[Dict[str, Any]]:
+        return self.gates

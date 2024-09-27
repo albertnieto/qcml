@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from .grid_search import GridSearch
-from .kernel_grid import (
+from .grids.kernel_grid import (
     classical_kernel_grid,
     classical_kernel_param_map,
     select_kernels,
@@ -23,7 +23,7 @@ from .kernel_grid import (
     kernel_param_map,
     reduced_kernel_grid,
 )
-from .transformation_grid import get_kernel_transform
+from .grids.transformation_grid import get_kernel_transform
 
 __all__ = [
     "grid_search",

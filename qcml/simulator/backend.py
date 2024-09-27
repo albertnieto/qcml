@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import importlib
+import os, sys
 
-# Determine the backend to use: 'jax' or 'torch'
 _backend = os.environ.get("SIMULATOR_BACKEND", "jax")
 
 if _backend == "jax":
@@ -69,8 +69,7 @@ def set_backend(backend_name: str):
     """
     global _backend
     _backend = backend_name
-    # Re-initialize the module to update the imports
-    import sys
-
-    sys.modules[__name__].__dict__.clear()
-    sys.modules[__name__].__dict__.update(__import__(__name__).__dict__)
+    os.environ["SIMULATOR_BACKEND"] = _backend
+    
+    # Re-import the current module to refresh backend
+    importlib.reload(sys.modules[__name__])

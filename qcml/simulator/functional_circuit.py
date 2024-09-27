@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
+# qcml/simulator/functional_circuit.py
 
-def histogram_intersection_kernel(x1, x2):
-    return np.sum(np.minimum(x1, x2))
+def functional_circuit(state, num_qubits):
+    from .functional_gates import x_gate, rx_gate
+    state = x_gate(state, target=0, num_qubits=num_qubits)
+    state = rx_gate(state, target=1, theta=0.5, num_qubits=num_qubits)
+    # Add more gate function calls as needed
+    return state

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qcml.bench.kernel_grid import kernel_grid
+from qcml.bench.grids.kernel_grid import kernel_grid
 from qcml.utils.kernel import kernel_transform
 import logging
 
