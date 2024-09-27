@@ -195,7 +195,17 @@ class GridSearch:
         self.results = []
         total_combinations = len(self.combinations)
 
-        for idx, (params, trans_func, trans_params) in enumerate(self.combinations):
+        for idx, combination in enumerate(self.combinations):
+            if len(combination) == 1:
+                params = combination[0]
+                trans_func = None
+                trans_params = None
+            elif len(combination) == 3:
+                params, trans_func, trans_params = combination
+            else:
+                logger.error(f"Invalid combination format: {combination}")
+                continue  # Skip invalid combinations
+
             try:
                 evaluation_result = self.evaluator.evaluate(
                     classifier,
